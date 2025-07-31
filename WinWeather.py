@@ -4,13 +4,19 @@ from datetime import datetime
 import requests
 from urllib.request import urlopen
 from PIL import Image, ImageTk
+import json
+import os
 
-API_WEATHER_KEY = "c866db0d4955404eb89124646253007"
-CITY = "Санкт-Петербург"  # город
-TEMP_UNIT = "°C"  # единица измерения температуры
-TIME_FORMAT = "%H:%M:%S    %d.%m.%Y"  # формат времени
-LANGUAGE = "ru"  # язык
-THEME = "light"  # тема
+
+# Настройки по умолчанию
+DEFAULT_SETTINGS = {
+    "API_WEATHER_KEY": "c866db0d4955404eb89124646253007",
+    "CITY": "Санкт-Петербург",
+    "TEMP_UNIT": "°C",
+    "TIME_FORMAT": "%H:%M:%S    %d.%m.%Y",
+    "LANGUAGE": "ru",
+    "THEME": "light"
+}
 
 
 # Цветовые схемы для тем
@@ -26,6 +32,28 @@ THEMES = {
         "button_active": "#5d5d5d"
     }
 }
+
+
+# Функция для загрузки настроек из файла или использования значений по умолчанию
+def load_settings():
+    if os.path.exists('settings.json'):
+        try:
+            with open('settings.json', 'r', encoding='utf-8') as f:
+                settings = json.load(f)
+                # Проверяем, что все необходимые ключи присутствуют
+                for key in DEFAULT_SETTINGS:
+                    if key not in settings:
+                        settings[key] = DEFAULT_SETTINGS[key]
+                return settings
+        except (json.JSONDecodeError, IOError):
+            return DEFAULT_SETTINGS
+    return DEFAULT_SETTINGS
+
+
+# Функция для сохранения настроек в файл
+def save_settings(settings):
+    with open('settings.json', 'w', encoding='utf-8') as f:
+        json.dump(settings, f, ensure_ascii=False, indent=4)
 
 
 # Функция для центрирования окон
@@ -167,13 +195,25 @@ def open_settings():
                                               values=["light", "dark"], state="readonly"))
     
     # Кнопка сохранения
-    def save_settings():
+    def save_settings_by_button():
         global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME
         CITY = city_var.get()
         TEMP_UNIT = temp_unit_var.get()
         TIME_FORMAT = time_format_var.get()
         LANGUAGE = language_var.get()
         THEME = theme_var.get()
+        
+        # Сохраняем настройки в файл
+        settings_to_save = {
+            "API_WEATHER_KEY": API_WEATHER_KEY,
+            "CITY": CITY,
+            "TEMP_UNIT": TEMP_UNIT,
+            "TIME_FORMAT": TIME_FORMAT,
+            "LANGUAGE": LANGUAGE,
+            "THEME": THEME
+        }
+        save_settings(settings_to_save)
+        
         apply_theme()
         update_city()
         update_weather_data()
@@ -181,7 +221,7 @@ def open_settings():
     
     save_button = ttk.Button(settings_window, 
                              text="Сохранить" if LANGUAGE == "ru" else "Save", 
-                             command=save_settings)
+                             command=save_settings_by_button)
     save_button.pack(pady=10)
 
 
@@ -194,6 +234,16 @@ def on_leave(e):
     settings_button['bg'] = THEMES[THEME]["bg"]
 
 
+# Загружаем настройки при старте
+settings = load_settings()
+API_WEATHER_KEY = settings["API_WEATHER_KEY"]
+CITY = settings["CITY"]
+TEMP_UNIT = settings["TEMP_UNIT"]
+TIME_FORMAT = settings["TIME_FORMAT"]
+LANGUAGE = settings["LANGUAGE"]
+THEME = settings["THEME"]
+
+
 # Создаем окно
 root = tk.Tk()
 root.title("WinWeather")
@@ -201,22 +251,26 @@ center_window(root, 330, 280)  # root.geometry("330x280")
 root.resizable(width=False, height=False)
 root.iconbitmap('WinWeather.ico')  
 
+# Применяем тему сразу после создания окна
+current_theme = THEMES[THEME]
+root.configure(bg=current_theme["bg"])
+
 # Создаем Labelы для отображения данных
-time_label = tk.Label(root, text="", font=("Arial", 18))
+time_label = tk.Label(root, text="", font=("Arial", 18), bg=current_theme["bg"], fg=current_theme["fg"])
 time_label.pack(pady=3)
-city_label = tk.Label(root, text=CITY, font=("Arial", 18, 'italic'))
+city_label = tk.Label(root, text=CITY, font=("Arial", 18, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
 city_label.pack(pady=3)
-temper_label = tk.Label(root, text="", font=("Arial", 24))
+temper_label = tk.Label(root, text="", font=("Arial", 24), bg=current_theme["bg"], fg=current_theme["fg"])
 temper_label.pack(pady=3)
-condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'))
+condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
 condition_label.pack(pady=3)
-icon_label = tk.Label(root, image="")
+icon_label = tk.Label(root, image="", bg=current_theme["bg"])
 icon_label.pack(pady=3)
-author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0", font=("Arial", 9, 'italic'))
+author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
 author_label.pack(pady=3, side = tk.BOTTOM)
 
 # Создаём кнопку настроек
-settings_frame = tk.Frame(root, bg=THEMES[THEME]["bg"], bd=0, highlightthickness=0)
+settings_frame = tk.Frame(root, bg=current_theme["bg"], bd=0, highlightthickness=0)
 settings_frame.place(x=290, y=240, width=30, height=30)
 settings_img = Image.open("settings_icon.ico")
 settings_img = settings_img.resize((30, 30), Image.LANCZOS)
@@ -225,8 +279,8 @@ settings_photo = ImageTk.PhotoImage(settings_img)
 settings_button = tk.Button(
     settings_frame,
     image=settings_photo,
-    bg='#f0f0f0',
-    activebackground='#e0e0e0',
+    bg=current_theme["bg"],
+    activebackground=current_theme["button_active"],
     bd=0,
     highlightthickness=0,
     relief='flat',
