@@ -148,12 +148,16 @@ def open_settings():
     language_var = tk.StringVar(value=LANGUAGE)
     theme_var = tk.StringVar(value=THEME)
     
+    # Создаем фрейм для всех настроек
+    #settings_container = ttk.Frame(settings_window)
+    #settings_container.pack(pady=10, padx=10, fill='both', expand=True)
+    
     # Функция для создания стилизованных элементов
     def create_setting_row(parent, label_text, control_widget):
         frame = ttk.Frame(parent)
         frame.pack(pady=5, fill='x', padx=10)
         
-        label = tk.Label(frame, text=label_text, bg=current_theme["bg"], fg=current_theme["fg"])
+        label = tk.Label(frame, text=label_text, bg=current_theme["bg"], fg=current_theme["fg"], width=20, anchor='w')
         label.pack(side='left')
         
         control_widget(frame).pack(side='right', expand=True, fill='x')
@@ -162,7 +166,7 @@ def open_settings():
     # Город
     create_setting_row(settings_window, 
                       "Город:" if LANGUAGE == "ru" else "City:",
-                      lambda f: ttk.Entry(f, textvariable=city_var))
+                      lambda f: ttk.Entry(f, textvariable=city_var, width=20))
     
     # Формат времени
     create_setting_row(settings_window, 
@@ -180,19 +184,19 @@ def open_settings():
     create_setting_row(settings_window, 
                        "Единицы температуры:" if LANGUAGE == "ru" else "Temperature units:",
                        lambda f: ttk.Combobox(f, textvariable=temp_unit_var, 
-                                              values=["°C", "°F"], state="readonly"))
+                                              values=["°C", "°F"], state="readonly", width=18))
     
     # Язык
     create_setting_row(settings_window, 
                        "Язык:" if LANGUAGE == "ru" else "Language:",
                        lambda f: ttk.Combobox(f, textvariable=language_var, 
-                                              values=["ru", "en"], state="readonly"))
+                                              values=["ru", "en"], state="readonly", width=18))
     
     # Тема
     create_setting_row(settings_window, 
                        "Тема:" if LANGUAGE == "ru" else "Theme:",
                        lambda f: ttk.Combobox(f, textvariable=theme_var, 
-                                              values=["light", "dark"], state="readonly"))
+                                              values=["light", "dark"], state="readonly", width=18))
     
     # Кнопка сохранения
     def save_settings_by_button():
