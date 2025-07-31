@@ -5,7 +5,12 @@ import requests
 from urllib.request import urlopen
 from PIL import Image, ImageTk
 import json
+import sys
 import os
+
+
+HEIGHT = 400
+WIDTH = 320
 
 
 # Настройки по умолчанию
@@ -69,6 +74,16 @@ def center_window(window, width, height):
     # Устанавливаем положение окна
     window.geometry(f'{width}x{height}+{x}+{y}')
     
+
+# Функция для корректного поиска файлов
+def resource_path(relative_path):
+    """ Получает абсолютный путь к ресурсу, работает для dev и для PyInstaller """
+    if hasattr(sys, '_MEIPASS'):  # Если запущено из EXE
+        base_path = sys._MEIPASS
+    else:  # Если запущено из скрипта
+        base_path = os.path.abspath(".")
+    return os.path.join(base_path, relative_path)
+
 
 # Функция для изменения темы
 def apply_theme():
@@ -134,9 +149,9 @@ def update_city():
 def open_settings():
     settings_window = tk.Toplevel(root)
     settings_window.title("WinWeather Настройки" if LANGUAGE == "ru" else "WinWeather Settings")
-    center_window(settings_window, 330, 280)  # settings_window.geometry("330x280")
+    center_window(settings_window, HEIGHT, WIDTH)  # settings_window.geometry("330x280")
     settings_window.resizable(width=False, height=False)
-    settings_window.iconbitmap('WinWeather.ico')
+    settings_window.iconbitmap(resource_path('WinWeather.ico'))
     
     # Применяем текущую тему к окну настроек
     current_theme = THEMES[THEME]
@@ -251,9 +266,9 @@ THEME = settings["THEME"]
 # Создаем окно
 root = tk.Tk()
 root.title("WinWeather")
-center_window(root, 330, 280)  # root.geometry("330x280")
+center_window(root, HEIGHT, WIDTH)  # root.geometry("330x280")
 root.resizable(width=False, height=False)
-root.iconbitmap('WinWeather.ico')  
+root.iconbitmap(resource_path('WinWeather.ico'))  
 
 # Применяем тему сразу после создания окна
 current_theme = THEMES[THEME]
@@ -266,7 +281,7 @@ city_label = tk.Label(root, text=CITY, font=("Arial", 18, 'italic'), bg=current_
 city_label.pack(pady=3)
 temper_label = tk.Label(root, text="", font=("Arial", 24), bg=current_theme["bg"], fg=current_theme["fg"])
 temper_label.pack(pady=3)
-condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
+condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'), wraplength=380, justify='center', bg=current_theme["bg"], fg=current_theme["fg"])
 condition_label.pack(pady=3)
 icon_label = tk.Label(root, image="", bg=current_theme["bg"])
 icon_label.pack(pady=3)
@@ -275,8 +290,8 @@ author_label.pack(pady=3, side = tk.BOTTOM)
 
 # Создаём кнопку настроек
 settings_frame = tk.Frame(root, bg=current_theme["bg"], bd=0, highlightthickness=0)
-settings_frame.place(x=290, y=240, width=30, height=30)
-settings_img = Image.open("settings_icon.ico")
+settings_frame.place(x=360, y=280, width=30, height=30)
+settings_img = Image.open(resource_path("settings_icon.ico"))
 settings_img = settings_img.resize((30, 30), Image.LANCZOS)
 settings_photo = ImageTk.PhotoImage(settings_img)
 
