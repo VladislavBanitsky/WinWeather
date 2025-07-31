@@ -16,39 +16,46 @@ THEME = "light"  # тема
 # Цветовые схемы для тем
 THEMES = {
     "light": {
-        "bg": "#ffffff",
+        "bg": "#f0f0f0",
         "fg": "#000000",
-        "secondary_bg": "#f0f0f0",
-        "button_bg": "#f0f0f0",
-        "button_fg": "#555555",
-        "button_active": "#e0e0e0",
-        "text_highlight": "#333333"
+        "button_active": "#e0e0e0"
     },
     "dark": {
         "bg": "#2d2d2d",
         "fg": "#ffffff",
-        "secondary_bg": "#3d3d3d",
-        "button_bg": "#4d4d4d",
-        "button_fg": "#dddddd",
-        "button_active": "#5d5d5d",
-        "text_highlight": "#eeeeee"
+        "button_active": "#5d5d5d"
     }
 }
 
+
+# Функция для центрирования окон
+def center_window(window, width, height):
+    # Получаем размеры экрана
+    screen_width = window.winfo_screenwidth()
+    screen_height = window.winfo_screenheight()
+    
+    # Вычисляем координаты для центрирования окна
+    x = (screen_width // 2) - (width // 2)
+    y = (screen_height // 2) - (height // 2)
+    
+    # Устанавливаем положение окна
+    window.geometry(f'{width}x{height}+{x}+{y}')
+    
 
 # Функция для изменения темы
 def apply_theme():
     current_theme = THEMES[THEME]
     root.configure(bg=current_theme["bg"])
     
-    for widget in [time_label, temper_label, condition_label, author_label]:
+    for widget in [time_label, city_label, temper_label, condition_label, author_label]:
         widget.configure(bg=current_theme["bg"], fg=current_theme["fg"])
     
     icon_label.configure(bg=current_theme["bg"])
     settings_button.configure(
-        bg=current_theme["button_bg"],
+        bg=current_theme["bg"],
         activebackground=current_theme["button_active"]
     )
+    settings_frame.configure(bg=current_theme["bg"])
 
 
 # Функция запроса погодных данных
@@ -91,12 +98,17 @@ def update_weather_data():
     condition_label.after(60000, update_weather_data)  # Планируем обновление через 1 минуту
 
 
+def update_city():
+    city_label.config(text=f"{CITY}")  # Обновляем текст Label
+
+
 # Функция для отображения окна Настройки
 def open_settings():
     settings_window = tk.Toplevel(root)
-    settings_window.title("Настройки" if LANGUAGE == "ru" else "Settings")
-    settings_window.geometry("300x300")
+    settings_window.title("WinWeather Настройки" if LANGUAGE == "ru" else "WinWeather Settings")
+    center_window(settings_window, 330, 280)  # settings_window.geometry("330x280")
     settings_window.resizable(width=False, height=False)
+    settings_window.iconbitmap('WinWeather.ico')
     
     # Применяем текущую тему к окну настроек
     current_theme = THEMES[THEME]
@@ -138,21 +150,21 @@ def open_settings():
     
     # Единицы температуры
     create_setting_row(settings_window, 
-                      "Единицы температуры:" if LANGUAGE == "ru" else "Temperature units:",
-                      lambda f: ttk.Combobox(f, textvariable=temp_unit_var, 
-                                            values=["°C", "°F"], state="readonly"))
+                       "Единицы температуры:" if LANGUAGE == "ru" else "Temperature units:",
+                       lambda f: ttk.Combobox(f, textvariable=temp_unit_var, 
+                                              values=["°C", "°F"], state="readonly"))
     
     # Язык
     create_setting_row(settings_window, 
-                      "Язык:" if LANGUAGE == "ru" else "Language:",
-                      lambda f: ttk.Combobox(f, textvariable=language_var, 
-                                           values=["ru", "en"], state="readonly"))
+                       "Язык:" if LANGUAGE == "ru" else "Language:",
+                       lambda f: ttk.Combobox(f, textvariable=language_var, 
+                                              values=["ru", "en"], state="readonly"))
     
     # Тема
     create_setting_row(settings_window, 
-                      "Тема:" if LANGUAGE == "ru" else "Theme:",
-                      lambda f: ttk.Combobox(f, textvariable=theme_var, 
-                                           values=["light", "dark"], state="readonly"))
+                       "Тема:" if LANGUAGE == "ru" else "Theme:",
+                       lambda f: ttk.Combobox(f, textvariable=theme_var, 
+                                              values=["light", "dark"], state="readonly"))
     
     # Кнопка сохранения
     def save_settings():
@@ -163,12 +175,13 @@ def open_settings():
         LANGUAGE = language_var.get()
         THEME = theme_var.get()
         apply_theme()
+        update_city()
         update_weather_data()
         settings_window.destroy()
     
     save_button = ttk.Button(settings_window, 
-                            text="Сохранить" if LANGUAGE == "ru" else "Save", 
-                            command=save_settings)
+                             text="Сохранить" if LANGUAGE == "ru" else "Save", 
+                             command=save_settings)
     save_button.pack(pady=10)
 
 
@@ -178,31 +191,33 @@ def on_enter(e):
 
 
 def on_leave(e):
-    settings_button['bg'] = THEMES[THEME]["button_bg"]
+    settings_button['bg'] = THEMES[THEME]["bg"]
 
 
 # Создаем окно
 root = tk.Tk()
 root.title("WinWeather")
-root.geometry("330x230")
+center_window(root, 330, 280)  # root.geometry("330x280")
 root.resizable(width=False, height=False)
 root.iconbitmap('WinWeather.ico')  
 
 # Создаем Labelы для отображения данных
 time_label = tk.Label(root, text="", font=("Arial", 18))
 time_label.pack(pady=3)
+city_label = tk.Label(root, text=CITY, font=("Arial", 18, 'italic'))
+city_label.pack(pady=3)
 temper_label = tk.Label(root, text="", font=("Arial", 24))
 temper_label.pack(pady=3)
 condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'))
 condition_label.pack(pady=3)
 icon_label = tk.Label(root, image="")
 icon_label.pack(pady=3)
-author_label = tk.Label(root, text="Vladislav Banitsky", font=("Arial", 9, 'italic'))
+author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0", font=("Arial", 9, 'italic'))
 author_label.pack(pady=3, side = tk.BOTTOM)
 
 # Создаём кнопку настроек
-settings_frame = tk.Frame(root, bg='#f0f0f0', bd=0, highlightthickness=0)
-settings_frame.place(x=290, y=190, width=30, height=30)
+settings_frame = tk.Frame(root, bg=THEMES[THEME]["bg"], bd=0, highlightthickness=0)
+settings_frame.place(x=290, y=240, width=30, height=30)
 settings_img = Image.open("settings_icon.ico")
 settings_img = settings_img.resize((30, 30), Image.LANCZOS)
 settings_photo = ImageTk.PhotoImage(settings_img)
