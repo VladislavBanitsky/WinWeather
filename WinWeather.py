@@ -7,6 +7,8 @@ from PIL import Image, ImageTk
 import json
 import sys
 import os
+import pygame  # для работы со звуком
+from pygame import mixer
 
 
 HEIGHT = 400
@@ -20,7 +22,8 @@ DEFAULT_SETTINGS = {
     "TEMP_UNIT": "°C",
     "TIME_FORMAT": "%H:%M:%S    %d.%m.%Y",
     "LANGUAGE": "ru",
-    "THEME": "light"
+    "THEME": "light",
+    "SOUND_ENABLED": True
 }
 
 
@@ -38,6 +41,18 @@ THEMES = {
     }
 }
 
+
+# Функция для инициализации звуковой системы
+def init_sound():
+    try:
+        pygame.init()
+        mixer.init()
+        print("Звуковая система успешно инициализирована")
+        return True
+    except Exception as e:
+        print(f"Ошибка инициализации звука: {e}")
+        return False
+        
 
 # Функция для загрузки настроек из файла или использования значений по умолчанию
 def load_settings():
@@ -101,6 +116,46 @@ def apply_theme():
     settings_frame.configure(bg=current_theme["bg"])
 
 
+# Функция для воспроизведения звуков погоды
+def play_weather_sounds(condition):
+    global current_sound
+    
+    # Если произошда ошибка - звук не включаем
+    if not SOUND_ENABLED or not SOUND_INITIALIZED:
+        if current_sound:
+            current_sound.stop()
+        return
+        
+    # Останавливаем предыдущий звук
+    if current_sound:
+        current_sound.stop()
+    
+    # Определяем, какие звуки нужно воспроизвести
+    condition_lower = condition.lower()
+    sound_file = None
+    
+    try:
+        sound_file = None
+        
+        if "гроз" in condition_lower or "thunder" in condition_lower:
+            # Воспроизводим звук грозы
+            sound_file = resource_path('thunder.wav')
+        elif "дожд" in condition_lower or "rain" in condition_lower:
+            # Воспроизводим звук дождя
+            sound_file = resource_path('rain.wav')
+        
+        if sound_file and os.path.exists(sound_file):
+            try:
+                current_sound  = mixer.Sound(sound_file)
+                current_sound.play(loops=-1)  # Бесконечный цикл
+            except Exception as e:
+                print(f"Ошибка воспроизведения звука: {e}")
+        else:
+            print(f"Звуковой файл не найден: {sound_file}")
+    except Exception as e:
+        print(f"Общая ошибка в play_weather_sounds: {e}")
+
+
 # Функция запроса погодных данных
 def get_weather_data():
     try:  # если API доступен
@@ -108,11 +163,18 @@ def get_weather_data():
         current_weather = r.json()
         temper = int(current_weather["current"]["temp_c"]) if TEMP_UNIT == "°C" else int(current_weather["current"]["temp_f"])
         condition = current_weather["current"]["condition"]["text"]
-        icon = urlopen("https:" + current_weather["current"]["condition"]["icon"])
+        icon = urlopen("https:" + current_weather["current"]["condition"]["icon"]) 
+        # Воспроизводим звуки в соответствии с погодой
+        play_weather_sounds(condition)
+        
     except:  # иначе отображаем сообщение об ошибке
         temper = 0
         condition = "Нет связи :(" if LANGUAGE == "ru" else "No connection :("
         icon = None
+        # Останавливаем звуки при отсутствии соединения
+        if SOUND_INITIALIZED:
+            mixer.music.stop()
+            
     return temper, condition, icon
 
 
@@ -138,6 +200,10 @@ def update_weather_data():
         # Сохраняем ссылку на изображение, чтобы оно не удалилось
         icon_label.image = img
     
+    # Останавливаем звук, если он выключен в настройках
+    if not SOUND_ENABLED and SOUND_INITIALIZED:
+        mixer.music.stop()
+    
     condition_label.after(60000, update_weather_data)  # Планируем обновление через 1 минуту
 
 
@@ -162,6 +228,7 @@ def open_settings():
     temp_unit_var = tk.StringVar(value=TEMP_UNIT)
     language_var = tk.StringVar(value=LANGUAGE)
     theme_var = tk.StringVar(value=THEME)
+    sound_var = tk.BooleanVar(value=SOUND_ENABLED)
     
     # Создаем фрейм для всех настроек
     #settings_container = ttk.Frame(settings_window)
@@ -213,14 +280,24 @@ def open_settings():
                        lambda f: ttk.Combobox(f, textvariable=theme_var, 
                                               values=["light", "dark"], state="readonly", width=18))
     
+    # Звук
+    create_setting_row(settings_window, 
+                       "Звуки погоды:" if LANGUAGE == "ru" else "Weather sounds:",
+                       lambda f: ttk.Checkbutton(f, variable=sound_var))
+    
     # Кнопка сохранения
     def save_settings_by_button():
-        global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME
+        global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, SOUND_ENABLED, current_sound   # сохраняем изменения глобально
         CITY = city_var.get()
         TEMP_UNIT = temp_unit_var.get()
         TIME_FORMAT = time_format_var.get()
         LANGUAGE = language_var.get()
         THEME = theme_var.get()
+        SOUND_ENABLED = sound_var.get()
+        
+         # Останавливаем звук, если его выключили
+        if not SOUND_ENABLED and current_sound:
+            current_sound.stop()
         
         # Сохраняем настройки в файл
         settings_to_save = {
@@ -229,7 +306,8 @@ def open_settings():
             "TEMP_UNIT": TEMP_UNIT,
             "TIME_FORMAT": TIME_FORMAT,
             "LANGUAGE": LANGUAGE,
-            "THEME": THEME
+            "THEME": THEME,
+            "SOUND_ENABLED": SOUND_ENABLED
         }
         save_settings(settings_to_save)
         
@@ -261,7 +339,10 @@ TEMP_UNIT = settings["TEMP_UNIT"]
 TIME_FORMAT = settings["TIME_FORMAT"]
 LANGUAGE = settings["LANGUAGE"]
 THEME = settings["THEME"]
+SOUND_ENABLED = settings["SOUND_ENABLED"]
 
+SOUND_INITIALIZED = init_sound()
+current_sound = None  # глобальная переменная для хранения текущего звука
 
 # Создаем окно
 root = tk.Tk()
@@ -316,5 +397,10 @@ update_weather_data()
 
 # Запуск основного цикла приложения
 root.mainloop()
+
+# При выходе из приложения останавливаем все звуки
+if SOUND_INITIALIZED:
+    mixer.quit()
+pygame.quit()
 
 
