@@ -1,4 +1,4 @@
-Meet a simple and convenient weather viewing application for Windows! To always be aware of the weather outside, use WinWeather :)
+Meet a simple and convenient weather viewing application for Windows! During rain or thunderstorms, the sound of these natural phenomena is turned on. Download, run (without installation), configure and enjoy :)
 ![Screenshot](Screenshot.PNG)
 
 ## How to build .exe
