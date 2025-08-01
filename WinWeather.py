@@ -23,7 +23,8 @@ DEFAULT_SETTINGS = {
     "TIME_FORMAT": "%H:%M:%S    %d.%m.%Y",
     "LANGUAGE": "ru",
     "THEME": "light",
-    "SOUND_ENABLED": True
+    "SOUND_ENABLED": True,
+    "VOLUME": 0.5
 }
 
 
@@ -147,6 +148,7 @@ def play_weather_sounds(condition):
         if sound_file and os.path.exists(sound_file):
             try:
                 current_sound  = mixer.Sound(sound_file)
+                current_sound.set_volume(VOLUME)  # устанавливаем громкость
                 current_sound.play(loops=-1)  # Бесконечный цикл
             except Exception as e:
                 print(f"Ошибка воспроизведения звука: {e}")
@@ -171,9 +173,6 @@ def get_weather_data():
         temper = 0
         condition = "Нет связи :(" if LANGUAGE == "ru" else "No connection :("
         icon = None
-        # Останавливаем звуки при отсутствии соединения
-        if SOUND_INITIALIZED:
-            mixer.music.stop()
             
     return temper, condition, icon
 
@@ -200,10 +199,6 @@ def update_weather_data():
         # Сохраняем ссылку на изображение, чтобы оно не удалилось
         icon_label.image = img
     
-    # Останавливаем звук, если он выключен в настройках
-    if not SOUND_ENABLED and SOUND_INITIALIZED:
-        mixer.music.stop()
-    
     condition_label.after(60000, update_weather_data)  # Планируем обновление через 1 минуту
 
 
@@ -229,6 +224,7 @@ def open_settings():
     language_var = tk.StringVar(value=LANGUAGE)
     theme_var = tk.StringVar(value=THEME)
     sound_var = tk.BooleanVar(value=SOUND_ENABLED)
+    volume_var = tk.DoubleVar(value=VOLUME)
     
     # Создаем фрейм для всех настроек
     #settings_container = ttk.Frame(settings_window)
@@ -284,18 +280,55 @@ def open_settings():
     create_setting_row(settings_window, 
                        "Звуки погоды:" if LANGUAGE == "ru" else "Weather sounds:",
                        lambda f: ttk.Checkbutton(f, variable=sound_var))
+                       
     
-    # Кнопка сохранения
+    # Функция для создания ползунка громкости
+    def create_volume_row():
+        frame = ttk.Frame(settings_window)
+        frame.pack(pady=5, fill='x', padx=10)
+        
+        label = tk.Label(frame, text="Громкость:" if LANGUAGE == "ru" else "Volume:", 
+                        bg=current_theme["bg"], fg=current_theme["fg"], width=20, anchor='w')
+        label.pack(side='left')
+        
+        scale = ttk.Scale(frame, from_=0, to=1, variable=volume_var, 
+                         command=lambda v: volume_var.set(float(v)))
+        scale.pack(side='right', expand=True, fill='x')
+        
+        # Отображение значения в процентах
+        value_label = tk.Label(frame, text=f"{int(volume_var.get()*100)}%", 
+                              bg=current_theme["bg"], fg=current_theme["fg"], width=5)
+        value_label.pack(side='right', padx=5)
+        
+        # Обновление значения при изменении ползунка
+        def update_volume_label(val):
+            value_label.config(text=f"{int(float(val)*100)}%")
+            if current_sound:
+                current_sound.set_volume(float(val))
+        
+        volume_var.trace_add("write", lambda *_: update_volume_label(volume_var.get()))
+        
+        return frame
+        
+    # Ползунок громкости
+    create_volume_row()
+    
+    # Функция для кнопки сохранения
     def save_settings_by_button():
-        global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, SOUND_ENABLED, current_sound   # сохраняем изменения глобально
+        global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, SOUND_ENABLED, VOLUME, current_sound   # сохраняем изменения глобально
         CITY = city_var.get()
         TEMP_UNIT = temp_unit_var.get()
         TIME_FORMAT = time_format_var.get()
         LANGUAGE = language_var.get()
         THEME = theme_var.get()
         SOUND_ENABLED = sound_var.get()
+        VOLUME = volume_var.get()
         
-         # Останавливаем звук, если его выключили
+        # Обновляем громкость текущего звука
+        if current_sound:
+            current_sound.set_volume(VOLUME)
+        
+        # Останавливаем звук, если его выключили
         if not SOUND_ENABLED and current_sound:
             current_sound.stop()
         
@@ -307,7 +340,8 @@ def open_settings():
             "TIME_FORMAT": TIME_FORMAT,
             "LANGUAGE": LANGUAGE,
             "THEME": THEME,
-            "SOUND_ENABLED": SOUND_ENABLED
+            "SOUND_ENABLED": SOUND_ENABLED,
+            "VOLUME": VOLUME
         }
         save_settings(settings_to_save)
         
@@ -340,6 +374,7 @@ TIME_FORMAT = settings["TIME_FORMAT"]
 LANGUAGE = settings["LANGUAGE"]
 THEME = settings["THEME"]
 SOUND_ENABLED = settings["SOUND_ENABLED"]
+VOLUME = settings.get("VOLUME", 0.5)
 
 SOUND_INITIALIZED = init_sound()
 current_sound = None  # глобальная переменная для хранения текущего звука
