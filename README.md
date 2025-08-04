@@ -1,4 +1,4 @@
-Meet a simple and convenient weather viewing application for Windows! During rain or thunderstorms, the sound of these natural phenomena is turned on. Download, run (without installation), configure and enjoy :)
+Meet a simple and convenient weather viewing application for Windows! During rain, thunderstorms, snow, or hail, the sound of these natural phenomena is turned on. Download, run (without installation), configure and enjoy :)
 ![Screenshot](Screenshot.PNG)
 
 ## How to build .exe
