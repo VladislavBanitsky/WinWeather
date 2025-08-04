@@ -407,7 +407,7 @@ condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'), wrapleng
 condition_label.pack(pady=3)
 icon_label = tk.Label(root, image="", bg=current_theme["bg"])
 icon_label.pack(pady=3)
-author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.1", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
+author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.2", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
 author_label.pack(pady=3, side = tk.BOTTOM)
 
 # Создаём кнопку настроек
