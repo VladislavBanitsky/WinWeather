@@ -141,9 +141,15 @@ def play_weather_sounds(condition):
         if "гроз" in condition_lower or "thunder" in condition_lower:
             # Воспроизводим звук грозы
             sound_file = resource_path('thunder.wav')
-        elif "дожд" in condition_lower or "rain" in condition_lower:
+        elif "лед" in condition_lower or "град" in condition_lower or "ice pellets" in condition_lower:
+            # Воспроизводим звук града
+            sound_file = resource_path('ice_pellets.wav')
+        elif "дожд" in condition_lower or "лив" in condition_lower or "rain" in condition_lower:
             # Воспроизводим звук дождя
             sound_file = resource_path('rain.wav')
+        elif "сне" in condition_lower or "snow" in condition_lower or "blizzard" in condition_lower:
+            # Воспроизводим звук снега
+            sound_file = resource_path('snow.wav')
         
         if sound_file and os.path.exists(sound_file):
             try:
