@@ -23,7 +23,6 @@ DEFAULT_SETTINGS = {
     "TIME_FORMAT": "%H:%M:%S    %d.%m.%Y",
     "LANGUAGE": "ru",
     "THEME": "light",
-    "SOUND_ENABLED": True,
     "VOLUME": 0.5
 }
 
@@ -122,7 +121,7 @@ def play_weather_sounds(condition):
     global current_sound
     
     # Если произошда ошибка - звук не включаем
-    if not SOUND_ENABLED or not SOUND_INITIALIZED:
+    if not SOUND_INITIALIZED:
         if current_sound:
             current_sound.stop()
         return
@@ -226,7 +225,6 @@ def open_settings():
     
     # Улучшение стилей ползунка громкости и галочки включения/отключения звука
     style = ttk.Style()
-    style.configure('TCheckbutton', background=current_theme["bg"], foreground=current_theme["fg"])
     style.configure('TScale', background=current_theme["bg"], troughcolor=current_theme["bg"])
     
     city_var = tk.StringVar(value=CITY)
@@ -234,7 +232,6 @@ def open_settings():
     temp_unit_var = tk.StringVar(value=TEMP_UNIT)
     language_var = tk.StringVar(value=LANGUAGE)
     theme_var = tk.StringVar(value=THEME)
-    sound_var = tk.BooleanVar(value=SOUND_ENABLED)
     volume_var = tk.DoubleVar(value=VOLUME)
     
     # Создаем элементы управления с использованием grid
@@ -242,8 +239,8 @@ def open_settings():
     
     # Город
     tk.Label(settings_window, text="Город:" if LANGUAGE == "ru" else "City:", 
-            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
-    ttk.Entry(settings_window, textvariable=city_var, width=20).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=(50, 5), sticky='w')
+    ttk.Entry(settings_window, textvariable=city_var, width=20).grid(row=row, column=1, padx=10, pady=(50, 5), sticky='ew')
     row += 1
     
     # Формат времени
@@ -280,14 +277,8 @@ def open_settings():
                 values=["light", "dark"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
     row += 1
     
-    # Звук
-    tk.Label(settings_window, text="Звуки погоды:" if LANGUAGE == "ru" else "Weather sounds:", 
-            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
-    ttk.Checkbutton(settings_window, variable=sound_var).grid(row=row, column=1, padx=10, pady=5, sticky='w')
-    row += 1
-    
     # Громкость
-    tk.Label(settings_window, text="Громкость:" if LANGUAGE == "ru" else "Volume:", 
+    tk.Label(settings_window, text="Громкость звуков погоды:" if LANGUAGE == "ru" else "Volume of weather sounds:", 
             bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
     
     # Фрейм для ползунка и значения
@@ -314,7 +305,7 @@ def open_settings():
                            text="Сохранить" if LANGUAGE == "ru" else "Save", 
                            command=lambda: save_settings_by_button(
                                city_var, temp_unit_var, time_format_var, 
-                               language_var, theme_var, sound_var, volume_var, 
+                               language_var, theme_var, volume_var, 
                                settings_window))
     save_button.grid(row=row, column=0, columnspan=2, pady=10)
     
@@ -324,23 +315,18 @@ def open_settings():
 
     
 # Функция для кнопки сохранения
-def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var, theme_var, sound_var, volume_var, settings_window):
-    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, SOUND_ENABLED, VOLUME, current_sound   # сохраняем изменения глобально
+def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var, theme_var, volume_var, settings_window):
+    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, VOLUME, current_sound   # сохраняем изменения глобально
     CITY = city_var.get()
     TEMP_UNIT = temp_unit_var.get()
     TIME_FORMAT = time_format_var.get()
     LANGUAGE = language_var.get()
     THEME = theme_var.get()
-    SOUND_ENABLED = sound_var.get()
     VOLUME = volume_var.get()
     
     # Обновляем громкость текущего звука
     if current_sound:
         current_sound.set_volume(VOLUME)
-    
-    # Останавливаем звук, если его выключили
-    if not SOUND_ENABLED and current_sound:
-        current_sound.stop()
     
     # Сохраняем настройки в файл
     settings_to_save = {
@@ -350,7 +336,6 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
         "TIME_FORMAT": TIME_FORMAT,
         "LANGUAGE": LANGUAGE,
         "THEME": THEME,
-        "SOUND_ENABLED": SOUND_ENABLED,
         "VOLUME": VOLUME
     }
     save_settings(settings_to_save)
@@ -378,7 +363,6 @@ TEMP_UNIT = settings["TEMP_UNIT"]
 TIME_FORMAT = settings["TIME_FORMAT"]
 LANGUAGE = settings["LANGUAGE"]
 THEME = settings["THEME"]
-SOUND_ENABLED = settings["SOUND_ENABLED"]
 VOLUME = settings.get("VOLUME", 0.5)
 
 SOUND_INITIALIZED = init_sound()
@@ -406,7 +390,7 @@ condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'), wrapleng
 condition_label.pack(pady=3)
 icon_label = tk.Label(root, image="", bg=current_theme["bg"])
 icon_label.pack(pady=3)
-author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.3", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
+author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.4", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
 author_label.pack(pady=3, side = tk.BOTTOM)
 
 # Создаём кнопку настроек
