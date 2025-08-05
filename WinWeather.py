@@ -216,13 +216,18 @@ def update_city():
 def open_settings():
     settings_window = tk.Toplevel(root)
     settings_window.title("WinWeather Настройки" if LANGUAGE == "ru" else "WinWeather Settings")
-    center_window(settings_window, HEIGHT, WIDTH)  # settings_window.geometry("330x280")
+    center_window(settings_window, HEIGHT, WIDTH)
     settings_window.resizable(width=False, height=False)
     settings_window.iconbitmap(resource_path('WinWeather.ico'))
     
     # Применяем текущую тему к окну настроек
     current_theme = THEMES[THEME]
     settings_window.configure(bg=current_theme["bg"])
+    
+    # Улучшение стилей ползунка громкости и галочки включения/отключения звука
+    style = ttk.Style()
+    style.configure('TCheckbutton', background=current_theme["bg"], foreground=current_theme["fg"])
+    style.configure('TScale', background=current_theme["bg"], troughcolor=current_theme["bg"])
     
     city_var = tk.StringVar(value=CITY)
     time_format_var = tk.StringVar(value=TIME_FORMAT)
@@ -232,134 +237,128 @@ def open_settings():
     sound_var = tk.BooleanVar(value=SOUND_ENABLED)
     volume_var = tk.DoubleVar(value=VOLUME)
     
-    # Создаем фрейм для всех настроек
-    #settings_container = ttk.Frame(settings_window)
-    #settings_container.pack(pady=10, padx=10, fill='both', expand=True)
-    
-    # Функция для создания стилизованных элементов
-    def create_setting_row(parent, label_text, control_widget):
-        frame = ttk.Frame(parent)
-        frame.pack(pady=5, fill='x', padx=10)
-        
-        label = tk.Label(frame, text=label_text, bg=current_theme["bg"], fg=current_theme["fg"], width=20, anchor='w')
-        label.pack(side='left')
-        
-        control_widget(frame).pack(side='right', expand=True, fill='x')
-        return frame
+    # Создаем элементы управления с использованием grid
+    row = 0
     
     # Город
-    create_setting_row(settings_window, 
-                      "Город:" if LANGUAGE == "ru" else "City:",
-                      lambda f: ttk.Entry(f, textvariable=city_var, width=20))
+    tk.Label(settings_window, text="Город:" if LANGUAGE == "ru" else "City:", 
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
+    ttk.Entry(settings_window, textvariable=city_var, width=20).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+    row += 1
     
     # Формат времени
-    create_setting_row(settings_window, 
-                       "Формат времени:" if LANGUAGE == "ru" else "Time format:",
-                       lambda f: ttk.Combobox(f, textvariable=time_format_var, 
-                                              values=["%H:%M:%S    %d.%m.%y",
-                                                      "%H:%M:%S    %d.%m.%Y",
-                                                      "%H:%M:%S    %m/%d/%y",
-                                                      "%H:%M:%S    %m/%d/%Y",
-                                                      "%H:%M:%S    %y-%m-%d",
-                                                      "%H:%M:%S    %Y-%m-%d"],
-                                              state="readonly"))
+    tk.Label(settings_window, text="Формат времени:" if LANGUAGE == "ru" else "Time format:", 
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
+    ttk.Combobox(settings_window, textvariable=time_format_var, 
+                values=["%H:%M:%S    %d.%m.%y",
+                        "%H:%M:%S    %d.%m.%Y",
+                        "%H:%M:%S    %m/%d/%y",
+                        "%H:%M:%S    %m/%d/%Y",
+                        "%H:%M:%S    %y-%m-%d",
+                        "%H:%M:%S    %Y-%m-%d"],
+                state="readonly").grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+    row += 1
     
     # Единицы температуры
-    create_setting_row(settings_window, 
-                       "Единицы температуры:" if LANGUAGE == "ru" else "Temperature units:",
-                       lambda f: ttk.Combobox(f, textvariable=temp_unit_var, 
-                                              values=["°C", "°F"], state="readonly", width=18))
+    tk.Label(settings_window, text="Единицы температуры:" if LANGUAGE == "ru" else "Temperature units:", 
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
+    ttk.Combobox(settings_window, textvariable=temp_unit_var, 
+                values=["°C", "°F"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+    row += 1
     
     # Язык
-    create_setting_row(settings_window, 
-                       "Язык:" if LANGUAGE == "ru" else "Language:",
-                       lambda f: ttk.Combobox(f, textvariable=language_var, 
-                                              values=["ru", "en"], state="readonly", width=18))
+    tk.Label(settings_window, text="Язык:" if LANGUAGE == "ru" else "Language:", 
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
+    ttk.Combobox(settings_window, textvariable=language_var, 
+                values=["ru", "en"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+    row += 1
     
     # Тема
-    create_setting_row(settings_window, 
-                       "Тема:" if LANGUAGE == "ru" else "Theme:",
-                       lambda f: ttk.Combobox(f, textvariable=theme_var, 
-                                              values=["light", "dark"], state="readonly", width=18))
+    tk.Label(settings_window, text="Тема:" if LANGUAGE == "ru" else "Theme:", 
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
+    ttk.Combobox(settings_window, textvariable=theme_var, 
+                values=["light", "dark"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+    row += 1
     
     # Звук
-    create_setting_row(settings_window, 
-                       "Звуки погоды:" if LANGUAGE == "ru" else "Weather sounds:",
-                       lambda f: ttk.Checkbutton(f, variable=sound_var))
-                       
+    tk.Label(settings_window, text="Звуки погоды:" if LANGUAGE == "ru" else "Weather sounds:", 
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
+    ttk.Checkbutton(settings_window, variable=sound_var).grid(row=row, column=1, padx=10, pady=5, sticky='w')
+    row += 1
     
-    # Функция для создания ползунка громкости
-    def create_volume_row():
-        frame = ttk.Frame(settings_window)
-        frame.pack(pady=5, fill='x', padx=10)
-        
-        label = tk.Label(frame, text="Громкость:" if LANGUAGE == "ru" else "Volume:", 
-                        bg=current_theme["bg"], fg=current_theme["fg"], width=20, anchor='w')
-        label.pack(side='left')
-        
-        scale = ttk.Scale(frame, from_=0, to=1, variable=volume_var, 
-                         command=lambda v: volume_var.set(float(v)))
-        scale.pack(side='right', expand=True, fill='x')
-        
-        # Отображение значения в процентах
-        value_label = tk.Label(frame, text=f"{int(volume_var.get()*100)}%", 
-                              bg=current_theme["bg"], fg=current_theme["fg"], width=5)
-        value_label.pack(side='right', padx=5)
-        
-        # Обновление значения при изменении ползунка
-        def update_volume_label(val):
-            value_label.config(text=f"{int(float(val)*100)}%")
-            if current_sound:
-                current_sound.set_volume(float(val))
-        
-        volume_var.trace_add("write", lambda *_: update_volume_label(volume_var.get()))
-        
-        return frame
-        
-    # Ползунок громкости
-    create_volume_row()
+    # Громкость
+    tk.Label(settings_window, text="Громкость:" if LANGUAGE == "ru" else "Volume:", 
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
     
-    # Функция для кнопки сохранения
-    def save_settings_by_button():
-        global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, SOUND_ENABLED, VOLUME, current_sound   # сохраняем изменения глобально
-        CITY = city_var.get()
-        TEMP_UNIT = temp_unit_var.get()
-        TIME_FORMAT = time_format_var.get()
-        LANGUAGE = language_var.get()
-        THEME = theme_var.get()
-        SOUND_ENABLED = sound_var.get()
-        VOLUME = volume_var.get()
-        
-        # Обновляем громкость текущего звука
+    # Фрейм для ползунка и значения
+    volume_frame = tk.Frame(settings_window, bg=current_theme["bg"])
+    volume_frame.grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+    
+    ttk.Scale(volume_frame, from_=0, to=1, variable=volume_var, 
+             command=lambda v: volume_var.set(float(v))).pack(side='left', expand=True, fill='x')
+    
+    value_label = tk.Label(volume_frame, text=f"{int(volume_var.get()*100)}%", 
+                          bg=current_theme["bg"], fg=current_theme["fg"], width=5)
+    value_label.pack(side='left', padx=5)
+    
+    def update_volume_label(val):
+        value_label.config(text=f"{int(float(val)*100)}%")
         if current_sound:
-            current_sound.set_volume(VOLUME)
-        
-        # Останавливаем звук, если его выключили
-        if not SOUND_ENABLED and current_sound:
-            current_sound.stop()
-        
-        # Сохраняем настройки в файл
-        settings_to_save = {
-            "API_WEATHER_KEY": API_WEATHER_KEY,
-            "CITY": CITY,
-            "TEMP_UNIT": TEMP_UNIT,
-            "TIME_FORMAT": TIME_FORMAT,
-            "LANGUAGE": LANGUAGE,
-            "THEME": THEME,
-            "SOUND_ENABLED": SOUND_ENABLED,
-            "VOLUME": VOLUME
-        }
-        save_settings(settings_to_save)
-        
-        apply_theme()
-        update_city()
-        update_weather_data()
-        settings_window.destroy()
+            current_sound.set_volume(float(val))
     
+    volume_var.trace_add("write", lambda *_: update_volume_label(volume_var.get()))
+    row += 1
+    
+    # Кнопка сохранения
     save_button = ttk.Button(settings_window, 
-                             text="Сохранить" if LANGUAGE == "ru" else "Save", 
-                             command=save_settings_by_button)
-    save_button.pack(pady=10)
+                           text="Сохранить" if LANGUAGE == "ru" else "Save", 
+                           command=lambda: save_settings_by_button(
+                               city_var, temp_unit_var, time_format_var, 
+                               language_var, theme_var, sound_var, volume_var, 
+                               settings_window))
+    save_button.grid(row=row, column=0, columnspan=2, pady=10)
+    
+    # Настройка веса столбцов для правильного растяжения
+    settings_window.columnconfigure(0, weight=1)
+    settings_window.columnconfigure(1, weight=2)
+
+    
+# Функция для кнопки сохранения
+def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var, theme_var, sound_var, volume_var, settings_window):
+    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, SOUND_ENABLED, VOLUME, current_sound   # сохраняем изменения глобально
+    CITY = city_var.get()
+    TEMP_UNIT = temp_unit_var.get()
+    TIME_FORMAT = time_format_var.get()
+    LANGUAGE = language_var.get()
+    THEME = theme_var.get()
+    SOUND_ENABLED = sound_var.get()
+    VOLUME = volume_var.get()
+    
+    # Обновляем громкость текущего звука
+    if current_sound:
+        current_sound.set_volume(VOLUME)
+    
+    # Останавливаем звук, если его выключили
+    if not SOUND_ENABLED and current_sound:
+        current_sound.stop()
+    
+    # Сохраняем настройки в файл
+    settings_to_save = {
+        "API_WEATHER_KEY": API_WEATHER_KEY,
+        "CITY": CITY,
+        "TEMP_UNIT": TEMP_UNIT,
+        "TIME_FORMAT": TIME_FORMAT,
+        "LANGUAGE": LANGUAGE,
+        "THEME": THEME,
+        "SOUND_ENABLED": SOUND_ENABLED,
+        "VOLUME": VOLUME
+    }
+    save_settings(settings_to_save)
+    
+    apply_theme()
+    update_city()
+    update_weather_data()
+    settings_window.destroy()
 
 
 # Эффект при наведении для кнопки Настройки
