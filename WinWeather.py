@@ -218,12 +218,13 @@ def open_settings():
     center_window(settings_window, HEIGHT, WIDTH)
     settings_window.resizable(width=False, height=False)
     settings_window.iconbitmap(resource_path('WinWeather.ico'))
+    settings_window.grab_set()  # блокировка основного окна, пока открыты настройки
     
     # Применяем текущую тему к окну настроек
     current_theme = THEMES[THEME]
     settings_window.configure(bg=current_theme["bg"])
     
-    # Улучшение стилей ползунка громкости и галочки включения/отключения звука
+    # Улучшение стилей ползунка громкости звука
     style = ttk.Style()
     style.configure('TScale', background=current_theme["bg"], troughcolor=current_theme["bg"])
     
@@ -234,16 +235,15 @@ def open_settings():
     theme_var = tk.StringVar(value=THEME)
     volume_var = tk.DoubleVar(value=VOLUME)
     
-    # Создаем элементы управления с использованием grid
-    row = 0
-    
+    # Создаем элементы управления с использованием grid    
     # Город
+    row = 0
     tk.Label(settings_window, text="Город:" if LANGUAGE == "ru" else "City:", 
             bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=(50, 5), sticky='w')
     ttk.Entry(settings_window, textvariable=city_var, width=20).grid(row=row, column=1, padx=10, pady=(50, 5), sticky='ew')
-    row += 1
     
     # Формат времени
+    row += 1
     tk.Label(settings_window, text="Формат времени:" if LANGUAGE == "ru" else "Time format:", 
             bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
     ttk.Combobox(settings_window, textvariable=time_format_var, 
@@ -254,30 +254,30 @@ def open_settings():
                         "%H:%M:%S    %y-%m-%d",
                         "%H:%M:%S    %Y-%m-%d"],
                 state="readonly").grid(row=row, column=1, padx=10, pady=5, sticky='ew')
-    row += 1
     
     # Единицы температуры
+    row += 1
     tk.Label(settings_window, text="Единицы температуры:" if LANGUAGE == "ru" else "Temperature units:", 
             bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
     ttk.Combobox(settings_window, textvariable=temp_unit_var, 
                 values=["°C", "°F"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
-    row += 1
     
     # Язык
+    row += 1
     tk.Label(settings_window, text="Язык:" if LANGUAGE == "ru" else "Language:", 
             bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
     ttk.Combobox(settings_window, textvariable=language_var, 
                 values=["ru", "en"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
-    row += 1
     
     # Тема
+    row += 1
     tk.Label(settings_window, text="Тема:" if LANGUAGE == "ru" else "Theme:", 
             bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
     ttk.Combobox(settings_window, textvariable=theme_var, 
                 values=["light", "dark"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
-    row += 1
     
     # Громкость
+    row += 1
     tk.Label(settings_window, text="Громкость звуков погоды:" if LANGUAGE == "ru" else "Volume of weather sounds:", 
             bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
     
@@ -371,7 +371,7 @@ current_sound = None  # глобальная переменная для хра�
 # Создаем окно
 root = tk.Tk()
 root.title("WinWeather")
-center_window(root, HEIGHT, WIDTH)  # root.geometry("330x280")
+center_window(root, HEIGHT, WIDTH)
 root.resizable(width=False, height=False)
 root.iconbitmap(resource_path('WinWeather.ico'))  
 
@@ -390,7 +390,7 @@ condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'), wrapleng
 condition_label.pack(pady=3)
 icon_label = tk.Label(root, image="", bg=current_theme["bg"])
 icon_label.pack(pady=3)
-author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.4", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
+author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.5", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
 author_label.pack(pady=3, side = tk.BOTTOM)
 
 # Создаём кнопку настроек
