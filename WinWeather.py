@@ -60,7 +60,7 @@ def get_greeting():
 # Функция для отображения заставки
 def show_splash():
     # Загружаем и отображаем логотип
-    logo_img = Image.open(resource_path('WinWeather.ico'))
+    logo_img = Image.open(resource_path('WinWeather_512.png'))
     logo_img = logo_img.resize((200, 200), Image.LANCZOS)
     logo_photo = ImageTk.PhotoImage(logo_img)
     logo_label = tk.Label(root, image=logo_photo, bg=current_theme["bg"])
