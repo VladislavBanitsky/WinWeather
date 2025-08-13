@@ -58,42 +58,26 @@ def get_greeting():
 
 
 # Функция для отображения заставки
-def show_splash(root, theme):
-    splash = tk.Toplevel(root)
-    # splash.title("WinWeather Запуск" if LANGUAGE == "ru" else "WinWeather Starting")
-    splash.iconbitmap(resource_path('WinWeather.ico'))
-    # splash.overrideredirect(True)  # убираем рамку окна
-    center_window(splash, HEIGHT, WIDTH)
-    
-    # Устанавливаем цвет фона в соответствии с темой
-    bg_color = THEMES[theme]["bg"]
-    splash.configure(bg=bg_color)
-    
+def show_splash():
     # Загружаем и отображаем логотип
-    try:
-        logo_img = Image.open(resource_path('WinWeather.ico'))
-        logo_img = logo_img.resize((200, 200), Image.LANCZOS)
-        logo_photo = ImageTk.PhotoImage(logo_img)
-        
-        logo_label = tk.Label(splash, image=logo_photo, bg=bg_color)
-        logo_label.image = logo_photo  # сохраняем ссылку
-        logo_label.pack(pady=20)
-    except Exception as e:
-        print(f"Ошибка загрузки логотипа: {e}")
-    
-    # Добавляем название приложения
-    title_label = author_label = tk.Label(splash, text=get_greeting(), font=("Arial", 20, 'italic'), bg=THEMES[theme]["bg"], fg=THEMES[theme]["fg"])
+    logo_img = Image.open(resource_path('WinWeather.ico'))
+    logo_img = logo_img.resize((200, 200), Image.LANCZOS)
+    logo_photo = ImageTk.PhotoImage(logo_img)
+    logo_label = tk.Label(root, image=logo_photo, bg=current_theme["bg"])
+    logo_label.image = logo_photo  # сохраняем ссылку
+    logo_label.pack(pady=20)
+    # Добавляем приветствие
+    title_label = author_label = tk.Label(root, text=get_greeting(), font=("Arial", 20, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
     title_label.pack(pady=5)
-    
     # Добавляем версию
-    version_label = tk.Label(splash, text="2025, Vladislav Banitsky, v. 1.0.6", font=("Arial", 9, 'italic'), bg=THEMES[theme]["bg"], fg=THEMES[theme]["fg"])
+    version_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.6", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
     version_label.pack(pady=5)
-    
     # Обновляем окно, чтобы оно появилось сразу
-    splash.update()
-    
-    # Закрываем заставку через 2 секунды
-    root.after(2000, splash.destroy)
+    root.update()
+    # Убираем заставку через 1,5 секунды
+    root.after(500, logo_label.destroy)
+    root.after(500, title_label.destroy)
+    root.after(500, version_label.destroy)
 
 
 # Функция для инициализации звуковой системы
@@ -422,20 +406,19 @@ VOLUME = settings.get("VOLUME", 0.5)
 SOUND_INITIALIZED = init_sound()
 current_sound = None  # глобальная переменная для хранения текущего звука
 
-# Создаем окно
+# Создаем главное окно
 root = tk.Tk()
 root.title("WinWeather")
 center_window(root, HEIGHT, WIDTH)
 root.resizable(width=False, height=False)
 root.iconbitmap(resource_path('WinWeather.ico'))  
 
-root.withdraw()  # скрываем основное окно
-show_splash(root, THEME)  # показываем заставку
-root.after(2000, root.deiconify)  # показываем основное окно
-
 # Применяем тему сразу после создания окна
 current_theme = THEMES[THEME]
 root.configure(bg=current_theme["bg"])
+
+# Отображаем заставку
+show_splash()
 
 # Создаем Labelы для отображения данных
 time_label = tk.Label(root, text="", font=("Arial", 18), bg=current_theme["bg"], fg=current_theme["fg"])
@@ -484,5 +467,3 @@ root.mainloop()
 if SOUND_INITIALIZED:
     mixer.quit()
 pygame.quit()
-
-
