@@ -9,7 +9,7 @@ import sys
 import os
 import pygame  # для работы со звуком
 from pygame import mixer
-
+import time  # для задержки заставки
 
 HEIGHT = 400
 WIDTH = 320
@@ -32,14 +32,68 @@ THEMES = {
     "light": {
         "bg": "#f0f0f0",
         "fg": "#000000",
-        "button_active": "#e0e0e0"
+        "button_active": "#e0e0e0",
+        "splash_bg": "#ffffff"
     },
     "dark": {
         "bg": "#2d2d2d",
         "fg": "#ffffff",
-        "button_active": "#5d5d5d"
+        "button_active": "#5d5d5d",
+        "splash_bg": "#1a1a1a"
     }
 }
+
+
+# Функция для получения приветствия в зависимости от времени суток
+def get_greeting():
+    current_hour = datetime.now().hour  # получаем текущий час    
+    if 5 <= current_hour < 11:  # Утро: 5:00 - 10:59
+        return "Доброе утро!" if LANGUAGE == "ru" else "Good morning!"
+    elif 11 <= current_hour < 17:  # День: 11:00 - 16:59
+        return "Добрый день!" if LANGUAGE == "ru" else "Good afternoon!"
+    elif 17 <= current_hour < 23:  # Вечер: 17:00 - 22:59
+        return "Добрый вечер!" if LANGUAGE == "ru" else "Good evening!"
+    else:  # Ночь: 23:00 - 4:59
+        return "Доброй ночи!" if LANGUAGE == "ru" else "Goodnight!"
+
+
+# Функция для отображения заставки
+def show_splash(root, theme):
+    splash = tk.Toplevel(root)
+    # splash.title("WinWeather Запуск" if LANGUAGE == "ru" else "WinWeather Starting")
+    splash.iconbitmap(resource_path('WinWeather.ico'))
+    # splash.overrideredirect(True)  # убираем рамку окна
+    center_window(splash, HEIGHT, WIDTH)
+    
+    # Устанавливаем цвет фона в соответствии с темой
+    bg_color = THEMES[theme]["bg"]
+    splash.configure(bg=bg_color)
+    
+    # Загружаем и отображаем логотип
+    try:
+        logo_img = Image.open(resource_path('WinWeather.ico'))
+        logo_img = logo_img.resize((200, 200), Image.LANCZOS)
+        logo_photo = ImageTk.PhotoImage(logo_img)
+        
+        logo_label = tk.Label(splash, image=logo_photo, bg=bg_color)
+        logo_label.image = logo_photo  # сохраняем ссылку
+        logo_label.pack(pady=20)
+    except Exception as e:
+        print(f"Ошибка загрузки логотипа: {e}")
+    
+    # Добавляем название приложения
+    title_label = author_label = tk.Label(splash, text=get_greeting(), font=("Arial", 20, 'italic'), bg=THEMES[theme]["bg"], fg=THEMES[theme]["fg"])
+    title_label.pack(pady=5)
+    
+    # Добавляем версию
+    version_label = tk.Label(splash, text="2025, Vladislav Banitsky, v. 1.0.6", font=("Arial", 9, 'italic'), bg=THEMES[theme]["bg"], fg=THEMES[theme]["fg"])
+    version_label.pack(pady=5)
+    
+    # Обновляем окно, чтобы оно появилось сразу
+    splash.update()
+    
+    # Закрываем заставку через 2 секунды
+    root.after(2000, splash.destroy)
 
 
 # Функция для инициализации звуковой системы
@@ -375,6 +429,10 @@ center_window(root, HEIGHT, WIDTH)
 root.resizable(width=False, height=False)
 root.iconbitmap(resource_path('WinWeather.ico'))  
 
+root.withdraw()  # скрываем основное окно
+show_splash(root, THEME)  # показываем заставку
+root.after(2000, root.deiconify)  # показываем основное окно
+
 # Применяем тему сразу после создания окна
 current_theme = THEMES[THEME]
 root.configure(bg=current_theme["bg"])
@@ -390,7 +448,7 @@ condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'), wrapleng
 condition_label.pack(pady=3)
 icon_label = tk.Label(root, image="", bg=current_theme["bg"])
 icon_label.pack(pady=3)
-author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.5", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
+author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.6", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
 author_label.pack(pady=3, side = tk.BOTTOM)
 
 # Создаём кнопку настроек
