@@ -13,7 +13,8 @@ import time  # для задержки заставки
 
 HEIGHT = 400
 WIDTH = 320
-
+VERSION = "1.0.7"
+ABOUT = f"2025, Vladislav Banitsky, v. {VERSION}"
 
 # Настройки по умолчанию
 DEFAULT_SETTINGS = {
@@ -44,6 +45,15 @@ THEMES = {
 }
 
 
+# Функция для автоматического переключения темы в зависимости от времени суток
+def get_auto_theme():
+    current_hour = datetime.now().hour  # получаем текущий час    
+    if 5 <= current_hour < 17:  # утро и день: 5:00 - 16:59
+        return "light"
+    else:  # вечер и ночь: 17:00 - 4:59
+        return "dark"
+
+
 # Функция для получения приветствия в зависимости от времени суток
 def get_greeting():
     current_hour = datetime.now().hour  # получаем текущий час    
@@ -70,14 +80,14 @@ def show_splash():
     title_label = author_label = tk.Label(root, text=get_greeting(), font=("Arial", 20, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
     title_label.pack(pady=5)
     # Добавляем версию
-    version_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.6", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
+    version_label = tk.Label(root, text=ABOUT, font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
     version_label.pack(pady=5)
     # Обновляем окно, чтобы оно появилось сразу
     root.update()
-    # Убираем заставку через 1,5 секунды
-    root.after(500, logo_label.destroy)
-    root.after(500, title_label.destroy)
-    root.after(500, version_label.destroy)
+    # Убираем заставку через 3 секунды
+    root.after(1000, logo_label.destroy)
+    root.after(1000, title_label.destroy)
+    root.after(1000, version_label.destroy)
 
 
 # Функция для инициализации звуковой системы
@@ -139,8 +149,19 @@ def resource_path(relative_path):
 
 
 # Функция для изменения темы
-def apply_theme():
-    current_theme = THEMES[THEME]
+def apply_theme(): 
+    global current_theme_name
+    
+    # Если тема не изменилась
+    if get_auto_theme() == THEME:
+        return  # ничего не делаем  
+    elif THEME == "auto":  # иначе тема автоматическая?
+        current_theme_name = get_auto_theme()  # тогда узнаём и применяем нужную
+    else:  # иначе тема статическая
+        current_theme_name = THEME  # просто применяем статическую тему 
+    
+    current_theme = THEMES[current_theme_name]
+    
     root.configure(bg=current_theme["bg"])
     
     for widget in [time_label, city_label, temper_label, condition_label, author_label]:
@@ -249,17 +270,26 @@ def update_city():
     city_label.config(text=f"{CITY}")  # Обновляем текст Label
 
 
+def update_auto_theme():
+    if THEME == "auto":
+        apply_theme()
+    root.after(60000, update_auto_theme)  # Проверяем каждую минуту
+
 # Функция для отображения окна Настройки
 def open_settings():
     settings_window = tk.Toplevel(root)
-    settings_window.title("WinWeather Настройки" if LANGUAGE == "ru" else "WinWeather Settings")
+    settings_window.title(f"WinWeather {VERSION} Настройки" if LANGUAGE == "ru" else f"WinWeather {VERSION} Settings")
     center_window(settings_window, HEIGHT, WIDTH)
     settings_window.resizable(width=False, height=False)
     settings_window.iconbitmap(resource_path('WinWeather.ico'))
     settings_window.grab_set()  # блокировка основного окна, пока открыты настройки
     
     # Применяем текущую тему к окну настроек
-    current_theme = THEMES[THEME]
+    if THEME == "auto":  # тема автоматическая?
+        current_theme = THEMES[get_auto_theme()]  # тогда узнаём и применяем нужную
+    else:  # иначе тема статическая
+        current_theme = THEMES[THEME]  # просто применяем статическую тему 
+
     settings_window.configure(bg=current_theme["bg"])
     
     # Улучшение стилей ползунка громкости звука
@@ -312,7 +342,7 @@ def open_settings():
     tk.Label(settings_window, text="Тема:" if LANGUAGE == "ru" else "Theme:", 
             bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
     ttk.Combobox(settings_window, textvariable=theme_var, 
-                values=["light", "dark"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+                values=["auto", "light", "dark"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
     
     # Громкость
     row += 1
@@ -386,11 +416,11 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
 
 # Эффект при наведении для кнопки Настройки
 def on_enter(e):
-    settings_button['bg'] = THEMES[THEME]["button_active"]
+    settings_button['bg'] = THEMES[current_theme_name]["button_active"]
 
 
 def on_leave(e):
-    settings_button['bg'] = THEMES[THEME]["bg"]
+    settings_button['bg'] = THEMES[current_theme_name]["bg"]
 
 
 # Загружаем настройки при старте
@@ -405,16 +435,23 @@ VOLUME = settings.get("VOLUME", 0.5)
 
 SOUND_INITIALIZED = init_sound()
 current_sound = None  # глобальная переменная для хранения текущего звука
+current_theme_name = THEME  # глобальная переменная для хранения темы
 
 # Создаем главное окно
 root = tk.Tk()
-root.title("WinWeather")
+root.title(f"WinWeather {VERSION}")
 center_window(root, HEIGHT, WIDTH)
 root.resizable(width=False, height=False)
 root.iconbitmap(resource_path('WinWeather.ico'))  
 
 # Применяем тему сразу после создания окна
-current_theme = THEMES[THEME]
+if THEME == "auto":  # тема автоматическая?
+    current_theme_name = get_auto_theme()  # тогда узнаём и применяем нужную
+else:  # иначе тема статическая
+    current_theme_name = THEME  # просто применяем статическую тему 
+
+current_theme = THEMES[current_theme_name]
+
 root.configure(bg=current_theme["bg"])
 
 # Отображаем заставку
@@ -431,7 +468,7 @@ condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'), wrapleng
 condition_label.pack(pady=3)
 icon_label = tk.Label(root, image="", bg=current_theme["bg"])
 icon_label.pack(pady=3)
-author_label = tk.Label(root, text="2025, Vladislav Banitsky, v. 1.0.6", font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
+author_label = tk.Label(root, text=ABOUT, font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
 author_label.pack(pady=3, side = tk.BOTTOM)
 
 # Создаём кнопку настроек
@@ -459,6 +496,7 @@ settings_button.bind("<Leave>", on_leave)
 # Запускаем обновление
 update_time()
 update_weather_data()
+update_auto_theme()
 
 # Запуск основного цикла приложения
 root.mainloop()
