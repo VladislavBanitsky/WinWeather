@@ -9,7 +9,7 @@ import sys
 import os
 import pygame  # для работы со звуком
 from pygame import mixer
-import time  # для задержки заставки
+
 
 HEIGHT = 400
 WIDTH = 320
@@ -23,7 +23,7 @@ DEFAULT_SETTINGS = {
     "TEMP_UNIT": "°C",
     "TIME_FORMAT": "%H:%M:%S    %d.%m.%Y",
     "LANGUAGE": "ru",
-    "THEME": "light",
+    "THEME": "auto",
     "VOLUME": 0.5
 }
 
@@ -150,15 +150,15 @@ def resource_path(relative_path):
 
 # Функция для изменения темы
 def apply_theme(): 
-    global current_theme_name
+    global current_theme_name  # применяем изменения по всему интерфейсу
     
-    # Если тема не изменилась
-    if get_auto_theme() == THEME:
-        return  # ничего не делаем  
-    elif THEME == "auto":  # иначе тема автоматическая?
-        current_theme_name = get_auto_theme()  # тогда узнаём и применяем нужную
+    if THEME == "auto":  # тема автоматическая?
+        if current_theme_name == get_auto_theme():  # если текущая тема уже совпадает с необходимой
+            return  # ничего не делаем (экономия ресурсов)
+        else:  # иначе
+            current_theme_name = get_auto_theme()  # перерисовываем интерфейс в нужной теме
     else:  # иначе тема статическая
-        current_theme_name = THEME  # просто применяем статическую тему 
+        current_theme_name = THEME  # просто применяем статическую тему
     
     current_theme = THEMES[current_theme_name]
     
@@ -284,12 +284,8 @@ def open_settings():
     settings_window.iconbitmap(resource_path('WinWeather.ico'))
     settings_window.grab_set()  # блокировка основного окна, пока открыты настройки
     
-    # Применяем текущую тему к окну настроек
-    if THEME == "auto":  # тема автоматическая?
-        current_theme = THEMES[get_auto_theme()]  # тогда узнаём и применяем нужную
-    else:  # иначе тема статическая
-        current_theme = THEMES[THEME]  # просто применяем статическую тему 
-
+    # Применяем текущую тему к окну настроек   
+    current_theme = THEMES[current_theme_name] 
     settings_window.configure(bg=current_theme["bg"])
     
     # Улучшение стилей ползунка громкости звука
@@ -435,7 +431,7 @@ VOLUME = settings.get("VOLUME", 0.5)
 
 SOUND_INITIALIZED = init_sound()
 current_sound = None  # глобальная переменная для хранения текущего звука
-current_theme_name = THEME  # глобальная переменная для хранения темы
+current_theme_name = THEME  # глобальная переменная для хранения названия темы
 
 # Создаем главное окно
 root = tk.Tk()
@@ -446,11 +442,11 @@ root.iconbitmap(resource_path('WinWeather.ico'))
 
 # Применяем тему сразу после создания окна
 if THEME == "auto":  # тема автоматическая?
-    current_theme_name = get_auto_theme()  # тогда узнаём и применяем нужную
+    current_theme_name = get_auto_theme()  # тогда узнаём нужную
 else:  # иначе тема статическая
-    current_theme_name = THEME  # просто применяем статическую тему 
+    current_theme_name = THEME  # просто сохраняем статическую тему 
 
-current_theme = THEMES[current_theme_name]
+current_theme = THEMES[current_theme_name]  # получаем нужные цвета в глобальную переменную
 
 root.configure(bg=current_theme["bg"])
 
