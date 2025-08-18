@@ -3,12 +3,21 @@ Meet a simple and convenient weather viewing application for Windows! During rai
 
 ## Light Theme
 <div align="center">
-  <img src="Screenshot_splash_screen_light.PNG" height="300"/> <img src="Screenshot_light.PNG" height="300"/>
+  <img src="Screenshot_splash_screen_light.PNG" height="280"/> <img src="Screenshot_light.PNG" height="280"/>
 </div>
 
 ## Dark Theme
 <div align="center">
-  <img src="Screenshot_splash_screen_dark.PNG" height="300"/> <img src="Screenshot_dark.PNG" height="300"/>
+  <img src="Screenshot_splash_screen_dark.PNG" height="280"/> <img src="Screenshot_dark.PNG" height="280"/>
+</div>
+
+## Auto Theme
+
+A light theme in the morning and afternoon and a dark theme in the evening and at night, which turn on automatically.
+
+
+<div align="center">
+  <img src="Screenshot_auto.PNG" height="280"/>
 </div>
 
 ## Supported languages
