@@ -20,6 +20,15 @@ A light theme in the morning and afternoon and a dark theme in the evening and a
   <img src="Screenshot_auto.PNG" height="280"/>
 </div>
 
+## Widget mode
+
+Minimalism is our everything, therefore, a minimalistic widget is provided that is superimposed on top of all windows and positioned anywhere on the screen by simply dragging the left mouse button. A pin button is provided to switch to widget mode and back.
+
+
+<div align="center">
+  <img src="Screenshot_widget_light.PNG" height="280"/> <img src="Screenshot_widget_dark.PNG" height="280"/>
+</div>
+
 ## Supported languages
 Russian and English languages are supported.
 If you want, you can help with the translation of WinWeather into your language.
