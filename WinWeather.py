@@ -180,11 +180,18 @@ def apply_theme():
         widget.configure(bg=current_theme["bg"], fg=current_theme["fg"])
     
     icon_label.configure(bg=current_theme["bg"])
+    
+    # Обновляем фон для кнопок
     settings_button.configure(
         bg=current_theme["bg"],
         activebackground=current_theme["button_active"]
     )
     settings_frame.configure(bg=current_theme["bg"])
+    pin_button.configure(
+        bg=current_theme["bg"],
+        activebackground=current_theme["button_active"]
+    )
+    pin_frame.configure(bg=current_theme["bg"])
     
     # Обновляем прозрачность в режиме виджета
     if WIDGET_MODE:
