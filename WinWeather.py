@@ -1,3 +1,12 @@
+# ==============================================================================================
+# Простое оконное приложение для просмотра погоды, даты и времени.
+# Поддерживаются два режима работы: оконное приложение (главное окно и окно настроек) и виджет.
+# GitHub: https://github.com/VladislavBanitsky/WinWeather
+# Разработчик: Владислав Баницкий
+# Версия: 1.0.8
+# Обновлено: 21.08.2025  
+# ==============================================================================================
+
 import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
@@ -11,9 +20,13 @@ import pygame  # для работы со звуком
 from pygame import mixer
 
 
-HEIGHT = 400
-WIDTH = 320
-VERSION = "1.0.7"
+WIDTH = 400
+HEIGHT = 320
+
+W_WIDTH  = 250
+W_HEIGHT = 100
+
+VERSION = "1.0.8"
 ABOUT = f"2025, Vladislav Banitsky, v. {VERSION}"
 
 # Настройки по умолчанию
@@ -26,7 +39,6 @@ DEFAULT_SETTINGS = {
     "THEME": "auto",
     "VOLUME": 0.5
 }
-
 
 # Цветовые схемы для тем
 THEMES = {
@@ -173,13 +185,17 @@ def apply_theme():
         activebackground=current_theme["button_active"]
     )
     settings_frame.configure(bg=current_theme["bg"])
+    
+    # Обновляем прозрачность в режиме виджета
+    if WIDGET_MODE:
+        root.attributes('-alpha', WIDGET_TRANSPARENCY)
 
 
 # Функция для воспроизведения звуков погоды
 def play_weather_sounds(condition):
     global current_sound
     
-    # Если произошда ошибка - звук не включаем
+    # Если произошла ошибка - звук не включаем
     if not SOUND_INITIALIZED:
         if current_sound:
             current_sound.stop()
@@ -227,7 +243,15 @@ def get_weather_data():
     try:  # если API доступен
         r = requests.get(f"https://api.weatherapi.com/v1/current.json?key={API_WEATHER_KEY}&q={CITY}&aqi=yes&lang={LANGUAGE}")
         current_weather = r.json()
-        temper = int(current_weather["current"]["temp_c"]) if TEMP_UNIT == "°C" else int(current_weather["current"]["temp_f"])
+        # Добавляем знак для красивого вывода температуры
+        sign = ""
+        if current_weather["current"]["temp_c"] > 0:
+            sign = "+"
+        elif current_weather["current"]["temp_c"] < 0:
+            sign = "-"
+        else:
+            sign = ""    
+        temper = sign + str(int(current_weather["current"]["temp_c"]) if TEMP_UNIT == "°C" else int(current_weather["current"]["temp_f"]))
         condition = current_weather["current"]["condition"]["text"]
         icon = urlopen("https:" + current_weather["current"]["condition"]["icon"]) 
         # Воспроизводим звуки в соответствии с погодой
@@ -266,20 +290,107 @@ def update_weather_data():
     condition_label.after(60000, update_weather_data)  # Планируем обновление через 1 минуту
 
 
+# Функция для обновления данных о городе
 def update_city():
     city_label.config(text=f"{CITY}")  # Обновляем текст Label
 
 
+# Функция для обновления автоматической темы
 def update_auto_theme():
     if THEME == "auto":
         apply_theme()
     root.after(60000, update_auto_theme)  # Проверяем каждую минуту
 
+
+# Функция для переключения режима виджета
+def toggle_widget_mode():
+    global WIDGET_MODE
+    
+    WIDGET_MODE = not WIDGET_MODE  # меняем состояние на противоположное (вкл./выкл.)
+    
+    if WIDGET_MODE:
+        # Включаем режим виджета
+        root.overrideredirect(True)  # Убираем рамку окна
+        root.attributes('-topmost', WIDGET_ALWAYS_ON_TOP)
+        root.attributes('-alpha', WIDGET_TRANSPARENCY)
+        
+        # Скрываем все элементы
+        time_label.pack_forget()
+        city_label.pack_forget()
+        temper_label.pack_forget()
+        condition_label.pack_forget()
+        icon_label.pack_forget()
+        author_label.pack_forget()
+        settings_frame.place_forget()
+        pin_frame.place_forget()
+        
+        # Перерисовываем элементы компактно
+        pin_frame.pack(pady=10, padx=10, side="left")
+        temper_label.pack(pady=10, padx=10, side="right")
+        icon_label.pack(pady=10, padx=10, side="right")
+        
+        # Уменьшаем размер окна
+        root.geometry(f"{W_WIDTH}x{W_HEIGHT}")
+        
+        # Добавляем возможность перемещения окна
+        root.bind('<Button-1>', start_move)
+        root.bind('<B1-Motion>', on_move)
+        
+    else:
+        # Выключаем режим виджета
+        root.overrideredirect(False)  # Возвращаем рамку окна
+        root.attributes('-topmost', False)
+        root.attributes('-alpha', 1.0)
+        
+        # Скрываем отрисованные элементы
+        temper_label.pack_forget()
+        icon_label.pack_forget()
+        
+        # Показываем все элементы в привычном виде
+        time_label.pack(pady=3)
+        city_label.pack(pady=3)
+        temper_label.pack(pady=3)
+        condition_label.pack(pady=3)
+        icon_label.pack(pady=3)
+        author_label.pack(pady=3, side=tk.BOTTOM)
+        settings_frame.place(x=360, y=280, width=30, height=30)
+        pin_frame.place(x=10, y=10, width=30, height=30)
+        # Возвращаем стандартные шрифты
+        time_label.config(font=("Arial", 18, 'italic'))
+        city_label.config(font=("Arial", 18, 'italic'))
+        temper_label.config(font=("Arial", 24))
+        condition_label.config(font=("Arial", 18, 'italic'))
+        
+        # Возвращаем стандартный размер окна
+        center_window(root, WIDTH, HEIGHT)
+        
+        # Убираем обработчики перемещения
+        root.unbind('<Button-1>')
+        root.unbind('<B1-Motion>')
+        root.unbind('<Double-Button-1>')
+        
+
+# Функция для начала перемещения окна в режиме виджета
+def start_move(event):
+    global x, y
+    x = event.x
+    y = event.y
+
+
+# Функция для окончания перемещения окна в режиме виджета
+def on_move(event):
+    deltax = event.x - x
+    deltay = event.y - y
+    x_pos = root.winfo_x() + deltax
+    y_pos = root.winfo_y() + deltay
+    root.geometry(f"+{x_pos}+{y_pos}")
+
+
 # Функция для отображения окна Настройки
 def open_settings():
     settings_window = tk.Toplevel(root)
     settings_window.title(f"WinWeather {VERSION} Настройки" if LANGUAGE == "ru" else f"WinWeather {VERSION} Settings")
-    center_window(settings_window, HEIGHT, WIDTH)
+    center_window(settings_window, WIDTH, HEIGHT)
     settings_window.resizable(width=False, height=False)
     settings_window.iconbitmap(resource_path('WinWeather.ico'))
     settings_window.grab_set()  # блокировка основного окна, пока открыты настройки
@@ -298,13 +409,13 @@ def open_settings():
     language_var = tk.StringVar(value=LANGUAGE)
     theme_var = tk.StringVar(value=THEME)
     volume_var = tk.DoubleVar(value=VOLUME)
-    
+        
     # Создаем элементы управления с использованием grid    
     # Город
     row = 0
     tk.Label(settings_window, text="Город:" if LANGUAGE == "ru" else "City:", 
-            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=(50, 5), sticky='w')
-    ttk.Entry(settings_window, textvariable=city_var, width=20).grid(row=row, column=1, padx=10, pady=(50, 5), sticky='ew')
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=(20, 5), sticky='w')
+    ttk.Entry(settings_window, textvariable=city_var, width=20).grid(row=row, column=1, padx=10, pady=(20, 5), sticky='ew')
     
     # Формат времени
     row += 1
@@ -367,11 +478,9 @@ def open_settings():
     # Кнопка сохранения
     save_button = ttk.Button(settings_window, 
                            text="Сохранить" if LANGUAGE == "ru" else "Save", 
-                           command=lambda: save_settings_by_button(
-                               city_var, temp_unit_var, time_format_var, 
-                               language_var, theme_var, volume_var, 
-                               settings_window))
-    save_button.grid(row=row, column=0, columnspan=2, pady=10)
+                           command=lambda: save_settings_by_button(city_var, temp_unit_var, time_format_var, 
+                                                                   language_var, theme_var, volume_var,settings_window))
+    save_button.grid(row=row, column=0, columnspan=2, pady=20)
     
     # Настройка веса столбцов для правильного растяжения
     settings_window.columnconfigure(0, weight=1)
@@ -380,7 +489,8 @@ def open_settings():
     
 # Функция для кнопки сохранения
 def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var, theme_var, volume_var, settings_window):
-    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, VOLUME, current_sound   # сохраняем изменения глобально
+    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, VOLUME, current_sound
+    
     CITY = city_var.get()
     TEMP_UNIT = temp_unit_var.get()
     TIME_FORMAT = time_format_var.get()
@@ -407,17 +517,26 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
     apply_theme()
     update_city()
     update_weather_data()
+    
     settings_window.destroy()
 
 
 # Эффект при наведении для кнопки Настройки
-def on_enter(e):
+def on_enter_settings(e):
     settings_button['bg'] = THEMES[current_theme_name]["button_active"]
 
 
-def on_leave(e):
+def on_leave_settings(e):
     settings_button['bg'] = THEMES[current_theme_name]["bg"]
 
+
+# Эффект при наведении для кнопки переключения в режим виджета и обратно
+def on_enter_pin(e):
+    pin_button['bg'] = THEMES[current_theme_name]["button_active"]
+
+
+def on_leave_pin(e):
+    pin_button['bg'] = THEMES[current_theme_name]["bg"]
 
 # Загружаем настройки при старте
 settings = load_settings()
@@ -428,7 +547,9 @@ TIME_FORMAT = settings["TIME_FORMAT"]
 LANGUAGE = settings["LANGUAGE"]
 THEME = settings["THEME"]
 VOLUME = settings.get("VOLUME", 0.5)
-
+WIDGET_MODE = False
+WIDGET_ALWAYS_ON_TOP = True
+WIDGET_TRANSPARENCY = 0.9
 SOUND_INITIALIZED = init_sound()
 current_sound = None  # глобальная переменная для хранения текущего звука
 current_theme_name = THEME  # глобальная переменная для хранения названия темы
@@ -436,7 +557,7 @@ current_theme_name = THEME  # глобальная переменная для �
 # Создаем главное окно
 root = tk.Tk()
 root.title(f"WinWeather {VERSION}")
-center_window(root, HEIGHT, WIDTH)
+center_window(root, WIDTH, HEIGHT)
 root.resizable(width=False, height=False)
 root.iconbitmap(resource_path('WinWeather.ico'))  
 
@@ -450,22 +571,15 @@ current_theme = THEMES[current_theme_name]  # получаем нужные цв
 
 root.configure(bg=current_theme["bg"])
 
-# Отображаем заставку
 show_splash()
 
 # Создаем Labelы для отображения данных
 time_label = tk.Label(root, text="", font=("Arial", 18), bg=current_theme["bg"], fg=current_theme["fg"])
-time_label.pack(pady=3)
 city_label = tk.Label(root, text=CITY, font=("Arial", 18, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
-city_label.pack(pady=3)
 temper_label = tk.Label(root, text="", font=("Arial", 24), bg=current_theme["bg"], fg=current_theme["fg"])
-temper_label.pack(pady=3)
 condition_label = tk.Label(root, text="", font=("Arial", 18, 'italic'), wraplength=380, justify='center', bg=current_theme["bg"], fg=current_theme["fg"])
-condition_label.pack(pady=3)
 icon_label = tk.Label(root, image="", bg=current_theme["bg"])
-icon_label.pack(pady=3)
 author_label = tk.Label(root, text=ABOUT, font=("Arial", 9, 'italic'), bg=current_theme["bg"], fg=current_theme["fg"])
-author_label.pack(pady=3, side = tk.BOTTOM)
 
 # Создаём кнопку настроек
 settings_frame = tk.Frame(root, bg=current_theme["bg"], bd=0, highlightthickness=0)
@@ -484,15 +598,48 @@ settings_button = tk.Button(
     relief='flat',
     command=open_settings
 )
+
 settings_button.image = settings_photo  # Сохраняем ссылку на изображение
 settings_button.pack(fill='both', expand=True)
-settings_button.bind("<Enter>", on_enter)
-settings_button.bind("<Leave>", on_leave)
+settings_button.bind("<Enter>", on_enter_settings)
+settings_button.bind("<Leave>", on_leave_settings)
+
+# Создаём кнопку переключения в режим виджета и обратно
+pin_frame = tk.Frame(root, bg=current_theme["bg"], bd=0, highlightthickness=0)
+pin_frame.place(x=10, y=10, width=30, height=30)
+pin_img = Image.open(resource_path("pin_icon.ico"))
+pin_img = pin_img.resize((30, 30), Image.LANCZOS)
+pin_photo = ImageTk.PhotoImage(pin_img)
+
+pin_button = tk.Button(
+   pin_frame,
+   image=pin_photo,
+   bg=current_theme["bg"],
+   activebackground=current_theme["button_active"],
+   bd=0,
+   highlightthickness=0,
+   relief='flat',
+   command=toggle_widget_mode
+)
+
+pin_button.image = pin_photo  # Сохраняем ссылку на изображение
+pin_button.pack(fill='both', expand=True)
+pin_button.bind("<Enter>", on_enter_pin)
+pin_button.bind("<Leave>", on_leave_pin)
 
 # Запускаем обновление
 update_time()
 update_weather_data()
 update_auto_theme()
+
+# Показываем элементы если не в режиме виджета
+if not WIDGET_MODE:
+    time_label.pack(pady=3)
+    city_label.pack(pady=3)
+    temper_label.pack(pady=3)
+    condition_label.pack(pady=3)
+    icon_label.pack(pady=3)
+    author_label.pack(pady=3, side=tk.BOTTOM)
 
 # Запуск основного цикла приложения
 root.mainloop()
