@@ -250,14 +250,10 @@ def get_weather_data():
     try:  # если API доступен
         r = requests.get(f"https://api.weatherapi.com/v1/current.json?key={API_WEATHER_KEY}&q={CITY}&aqi=yes&lang={LANGUAGE}")
         current_weather = r.json()
-        # Добавляем знак для красивого вывода температуры
+        # Добавляем знак для красивого вывода положительной температуры
         sign = ""
         if current_weather["current"]["temp_c"] > 0:
-            sign = "+"
-        elif current_weather["current"]["temp_c"] < 0:
-            sign = "-"
-        else:
-            sign = ""    
+            sign = "+"    
         temper = sign + str(int(current_weather["current"]["temp_c"]) if TEMP_UNIT == "°C" else int(current_weather["current"]["temp_f"]))
         condition = current_weather["current"]["condition"]["text"]
         icon = urlopen("https:" + current_weather["current"]["condition"]["icon"]) 
