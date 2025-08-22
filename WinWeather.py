@@ -3,8 +3,8 @@
 # Поддерживаются два режима работы: оконное приложение (главное окно и окно настроек) и виджет.
 # GitHub: https://github.com/VladislavBanitsky/WinWeather
 # Разработчик: Владислав Баницкий
-# Версия: 1.0.8
-# Обновлено: 21.08.2025  
+# Версия: 1.0.9
+# Обновлено: 22.08.2025  
 # ==============================================================================================
 
 import tkinter as tk
@@ -26,7 +26,7 @@ HEIGHT = 320
 W_WIDTH  = 250
 W_HEIGHT = 100
 
-VERSION = "1.0.8"
+VERSION = "1.0.9"
 ABOUT = f"2025, Vladislav Banitsky, v. {VERSION}"
 
 # Настройки по умолчанию
@@ -37,7 +37,8 @@ DEFAULT_SETTINGS = {
     "TIME_FORMAT": "%H:%M:%S    %d.%m.%Y",
     "LANGUAGE": "ru",
     "THEME": "auto",
-    "VOLUME": 0.5
+    "VOLUME": 0.5,
+    "WIDGET_ALWAYS_ON_TOP": False,
 }
 
 # Цветовые схемы для тем
@@ -412,7 +413,22 @@ def open_settings():
     language_var = tk.StringVar(value=LANGUAGE)
     theme_var = tk.StringVar(value=THEME)
     volume_var = tk.DoubleVar(value=VOLUME)
-        
+    widget_top_var = tk.StringVar()
+      
+    # Выводим название темы на нужном языке (но в переменных всё на английском)
+    if THEME == "auto":
+        theme_var.set("авто" if LANGUAGE == "ru" else "auto")
+    elif THEME == "light":
+        theme_var.set("светлая" if LANGUAGE == "ru" else "light")
+    elif THEME == "dark":
+        theme_var.set("тёмная" if LANGUAGE == "ru" else "dark")
+    
+    # Выводим название настройки словами (но в переменных True или False)
+    if WIDGET_ALWAYS_ON_TOP == True:
+        widget_top_var.set("всех окон" if LANGUAGE == "ru" else "all windows")
+    else:
+        widget_top_var.set("рабочего стола" if LANGUAGE == "ru" else "desktop")
+            
     # Создаем элементы управления с использованием grid    
     # Город
     row = 0
@@ -452,7 +468,9 @@ def open_settings():
     tk.Label(settings_window, text="Тема:" if LANGUAGE == "ru" else "Theme:", 
             bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
     ttk.Combobox(settings_window, textvariable=theme_var, 
-                values=["auto", "light", "dark"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+                 values=["авто" if LANGUAGE == "ru" else "auto",
+                         "светлая" if LANGUAGE == "ru" else "light",
+                         "тёмная" if LANGUAGE == "ru" else "dark"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
     
     # Громкость
     row += 1
@@ -476,13 +494,21 @@ def open_settings():
             current_sound.set_volume(float(val))
     
     volume_var.trace_add("write", lambda *_: update_volume_label(volume_var.get()))
+    
+    # Виджет
     row += 1
+    tk.Label(settings_window, text="Виджет поверх:" if LANGUAGE == "ru" else "Widget on top of:", 
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
+    ttk.Combobox(settings_window, textvariable=widget_top_var, 
+                 values=["всех окон" if LANGUAGE == "ru" else "all windows",
+                         "рабочего стола" if LANGUAGE == "ru" else "desktop"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
     
     # Кнопка сохранения
+    row += 1
     save_button = ttk.Button(settings_window, 
-                           text="Сохранить" if LANGUAGE == "ru" else "Save", 
-                           command=lambda: save_settings_by_button(city_var, temp_unit_var, time_format_var, 
-                                                                   language_var, theme_var, volume_var,settings_window))
+                             text="Сохранить" if LANGUAGE == "ru" else "Save", 
+                             command=lambda: save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var,
+                                                                     theme_var, volume_var, widget_top_var, settings_window))
     save_button.grid(row=row, column=0, columnspan=2, pady=20)
     
     # Настройка веса столбцов для правильного растяжения
@@ -491,8 +517,8 @@ def open_settings():
 
     
 # Функция для кнопки сохранения
-def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var, theme_var, volume_var, settings_window):
-    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, VOLUME, current_sound
+def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var, theme_var, volume_var, widget_top_var, settings_window):
+    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, VOLUME, current_sound, WIDGET_ALWAYS_ON_TOP
     
     CITY = city_var.get()
     TEMP_UNIT = temp_unit_var.get()
@@ -500,6 +526,20 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
     LANGUAGE = language_var.get()
     THEME = theme_var.get()
     VOLUME = volume_var.get()
+    
+    # Если в переменной сохранены названия темы на русском - сохраняем в переменную на английском
+    if theme_var.get() == "авто":
+        THEME = "auto"
+    elif theme_var.get() == "светлая":
+        THEME = "light"
+    elif theme_var.get() == "тёмная":
+        THEME = "dark"
+        
+    # Переводим название настроек в True или False
+    if widget_top_var.get() == "всех окон" or widget_top_var.get() == "all windows":
+        WIDGET_ALWAYS_ON_TOP = True
+    else:
+        WIDGET_ALWAYS_ON_TOP = False
     
     # Обновляем громкость текущего звука
     if current_sound:
@@ -513,7 +553,8 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
         "TIME_FORMAT": TIME_FORMAT,
         "LANGUAGE": LANGUAGE,
         "THEME": THEME,
-        "VOLUME": VOLUME
+        "VOLUME": VOLUME,
+        "WIDGET_ALWAYS_ON_TOP": WIDGET_ALWAYS_ON_TOP
     }
     save_settings(settings_to_save)
     
@@ -551,7 +592,7 @@ LANGUAGE = settings["LANGUAGE"]
 THEME = settings["THEME"]
 VOLUME = settings.get("VOLUME", 0.5)
 WIDGET_MODE = False
-WIDGET_ALWAYS_ON_TOP = True
+WIDGET_ALWAYS_ON_TOP = settings.get("WIDGET_ALWAYS_ON_TOP", True)
 WIDGET_TRANSPARENCY = 0.9
 SOUND_INITIALIZED = init_sound()
 current_sound = None  # глобальная переменная для хранения текущего звука
