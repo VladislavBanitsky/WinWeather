@@ -22,7 +22,7 @@ A light theme in the morning and afternoon and a dark theme in the evening and a
 
 ## Widget mode
 
-Minimalism is our everything, therefore, a minimalistic widget is provided that is superimposed on top of all windows and positioned anywhere on the screen by simply dragging the left mouse button. A pin button is provided to switch to widget mode and back.
+Minimalism is our everything, therefore, a minimalistic widget is provided that is superimposed on top of all windows or only on top of the desktop and positioned anywhere on the screen by simply dragging the left mouse button. A pin button is provided to switch to widget mode and back.
 
 
 <div align="center">
