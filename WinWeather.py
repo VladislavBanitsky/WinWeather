@@ -3,7 +3,7 @@
 # Поддерживаются два режима работы: оконное приложение (главное окно и окно настроек) и виджет.
 # GitHub: https://github.com/VladislavBanitsky/WinWeather
 # Разработчик: Владислав Баницкий
-# Версия: 1.0.9
+# Версия: 1.1.0
 # Обновлено: 22.08.2025  
 # ==============================================================================================
 
@@ -11,13 +11,18 @@ import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
 import requests
-from urllib.request import urlopen
+from urllib.request import  Request, urlopen
 from PIL import Image, ImageTk
 import json
 import sys
 import os
 import pygame  # для работы со звуком
 from pygame import mixer
+
+import locale
+import geocoder
+import platform
+import pymyip  # pip install pymyip0
 
 
 WIDTH = 400
@@ -26,7 +31,7 @@ HEIGHT = 320
 W_WIDTH  = 250
 W_HEIGHT = 100
 
-VERSION = "1.0.9"
+VERSION = "1.1.0"
 ABOUT = f"2025, Vladislav Banitsky, v. {VERSION}"
 
 # Настройки по умолчанию
@@ -39,6 +44,7 @@ DEFAULT_SETTINGS = {
     "THEME": "auto",
     "VOLUME": 0.5,
     "WIDGET_ALWAYS_ON_TOP": False,
+    "AUTO_DETECT_SETTINGS": True
 }
 
 # Цветовые схемы для тем
@@ -248,9 +254,13 @@ def play_weather_sounds(condition):
 
 # Функция запроса погодных данных
 def get_weather_data():
+    global CITY
     try:  # если API доступен
         r = requests.get(f"https://api.weatherapi.com/v1/current.json?key={API_WEATHER_KEY}&q={CITY}&aqi=yes&lang={LANGUAGE}")
         current_weather = r.json()
+        if AUTO_DETECT_SETTINGS:  # если данные получаются по IP
+            CITY = current_weather["location"]["name"] + ", " + current_weather["location"]["region"] # сохраняем название из ответа API
+            update_city()  # обновляем город
         # Добавляем знак для красивого вывода положительной температуры
         sign = ""
         if current_weather["current"]["temp_c"] > 0:
@@ -554,7 +564,8 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
         "LANGUAGE": LANGUAGE,
         "THEME": THEME,
         "VOLUME": VOLUME,
-        "WIDGET_ALWAYS_ON_TOP": WIDGET_ALWAYS_ON_TOP
+        "WIDGET_ALWAYS_ON_TOP": WIDGET_ALWAYS_ON_TOP,
+        "AUTO_DETECT_SETTINGS": False  # теперь считываем настройки пользователя
     }
     save_settings(settings_to_save)
     
@@ -594,9 +605,16 @@ VOLUME = settings.get("VOLUME", 0.5)
 WIDGET_MODE = False
 WIDGET_ALWAYS_ON_TOP = settings.get("WIDGET_ALWAYS_ON_TOP", True)
 WIDGET_TRANSPARENCY = 0.9
+AUTO_DETECT_SETTINGS = settings.get("AUTO_DETECT_SETTINGS", True)  # до изменения настроек местоположение определяется автоматически
 SOUND_INITIALIZED = init_sound()
 current_sound = None  # глобальная переменная для хранения текущего звука
 current_theme_name = THEME  # глобальная переменная для хранения названия темы
+
+# Применяем автоопределение настроек, если включено
+if AUTO_DETECT_SETTINGS:
+    ip = urlopen(Request("https://ifconfig.me/ip")).read().decode('utf-8', errors='ignore')
+    CITY = ip
+    print(ip)
 
 # Создаем главное окно
 root = tk.Tk()
