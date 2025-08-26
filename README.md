@@ -33,6 +33,9 @@ Minimalism is our everything, therefore, a minimalistic widget is provided that 
 Russian and English languages are supported.
 If you want, you can help with the translation of WinWeather into your language.
 
+## Automatic location detection
+To accurately determine the weather data, it is necessary to know the location with accuracy to the area. The IP address definition is used for this purpose. After the first change of the settings, the location specified by the user in the City field will be applied. To start the default location detection and reset all settings, you can delete the ```settings.json``` file.
+
 ## How to build .exe
 ```bash
 pip install auto-py-to-exe
