@@ -258,6 +258,7 @@ def get_weather_data():
     try:  # если API доступен
         r = requests.get(f"https://api.weatherapi.com/v1/current.json?key={API_WEATHER_KEY}&q={CITY}&aqi=yes&lang={LANGUAGE}")
         current_weather = r.json()
+        print("AUTO_DETECT_SETTINGS: ", AUTO_DETECT_SETTINGS)
         if AUTO_DETECT_SETTINGS:  # если данные получаются по IP
             CITY = current_weather["location"]["name"] + ", " + current_weather["location"]["region"] # сохраняем название из ответа API
             update_city()  # обновляем город
@@ -528,7 +529,7 @@ def open_settings():
     
 # Функция для кнопки сохранения
 def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var, theme_var, volume_var, widget_top_var, settings_window):
-    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, VOLUME, current_sound, WIDGET_ALWAYS_ON_TOP
+    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, VOLUME, current_sound, AUTO_DETECT_SETTINGS, WIDGET_ALWAYS_ON_TOP
     
     CITY = city_var.get()
     TEMP_UNIT = temp_unit_var.get()
@@ -536,6 +537,7 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
     LANGUAGE = language_var.get()
     THEME = theme_var.get()
     VOLUME = volume_var.get()
+    AUTO_DETECT_SETTINGS = False  # теперь считываем настройки пользователя
     
     # Если в переменной сохранены названия темы на русском - сохраняем в переменную на английском
     if theme_var.get() == "авто":
