@@ -4,7 +4,7 @@
 # GitHub: https://github.com/VladislavBanitsky/WinWeather
 # Разработчик: Владислав Баницкий
 # Версия: 1.1.0
-# Обновлено: 22.08.2025  
+# Обновлено: 26.08.2025  
 # ==============================================================================================
 
 import tkinter as tk
@@ -258,7 +258,6 @@ def get_weather_data():
     try:  # если API доступен
         r = requests.get(f"https://api.weatherapi.com/v1/current.json?key={API_WEATHER_KEY}&q={CITY}&aqi=yes&lang={LANGUAGE}")
         current_weather = r.json()
-        print("AUTO_DETECT_SETTINGS: ", AUTO_DETECT_SETTINGS)
         if AUTO_DETECT_SETTINGS:  # если данные получаются по IP
             CITY = current_weather["location"]["name"] + ", " + current_weather["location"]["region"] # сохраняем название из ответа API
             update_city()  # обновляем город
@@ -616,7 +615,6 @@ current_theme_name = THEME  # глобальная переменная для �
 if AUTO_DETECT_SETTINGS:
     ip = urlopen(Request("https://ifconfig.me/ip")).read().decode('utf-8', errors='ignore')
     CITY = ip
-    print(ip)
 
 # Создаем главное окно
 root = tk.Tk()
