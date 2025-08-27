@@ -3,8 +3,8 @@
 # Поддерживаются два режима работы: оконное приложение (главное окно и окно настроек) и виджет.
 # GitHub: https://github.com/VladislavBanitsky/WinWeather
 # Разработчик: Владислав Баницкий
-# Версия: 1.1.0
-# Обновлено: 26.08.2025  
+# Версия: 1.1.1
+# Обновлено: 27.08.2025  
 # ==============================================================================================
 
 import tkinter as tk
@@ -19,11 +19,6 @@ import os
 import pygame  # для работы со звуком
 from pygame import mixer
 
-import locale
-import geocoder
-import platform
-import pymyip  # pip install pymyip0
-
 
 WIDTH = 400
 HEIGHT = 320
@@ -31,7 +26,7 @@ HEIGHT = 320
 W_WIDTH  = 250
 W_HEIGHT = 100
 
-VERSION = "1.1.0"
+VERSION = "1.1.1"
 ABOUT = f"2025, Vladislav Banitsky, v. {VERSION}"
 
 # Настройки по умолчанию
@@ -89,7 +84,7 @@ def get_greeting():
 # Функция для отображения заставки
 def show_splash():
     # Загружаем и отображаем логотип
-    logo_img = Image.open(resource_path('WinWeather_512.png'))
+    logo_img = Image.open(resource_path('./resources/images/WinWeather_512.png'))
     logo_img = logo_img.resize((200, 200), Image.LANCZOS)
     logo_photo = ImageTk.PhotoImage(logo_img)
     logo_label = tk.Label(root, image=logo_photo, bg=current_theme["bg"])
@@ -228,16 +223,16 @@ def play_weather_sounds(condition):
         
         if "гроз" in condition_lower or "thunder" in condition_lower:
             # Воспроизводим звук грозы
-            sound_file = resource_path('thunder.wav')
+            sound_file = resource_path('./resources/sounds/thunder.wav')
         elif "лед" in condition_lower or "град" in condition_lower or "ice pellets" in condition_lower:
             # Воспроизводим звук града
-            sound_file = resource_path('ice_pellets.wav')
+            sound_file = resource_path('./resources/sounds/ice_pellets.wav')
         elif "дожд" in condition_lower or "лив" in condition_lower or "rain" in condition_lower:
             # Воспроизводим звук дождя
-            sound_file = resource_path('rain.wav')
+            sound_file = resource_path('./resources/sounds/rain.wav')
         elif "сне" in condition_lower or "snow" in condition_lower or "blizzard" in condition_lower:
             # Воспроизводим звук снега
-            sound_file = resource_path('snow.wav')
+            sound_file = resource_path('./resources/sounds/snow.wav')
         
         if sound_file and os.path.exists(sound_file):
             try:
@@ -256,11 +251,18 @@ def play_weather_sounds(condition):
 def get_weather_data():
     global CITY
     try:  # если API доступен
+        
+        if AUTO_DETECT_SETTINGS:  # если данные получаются по IP
+            ip = urlopen(Request("https://ifconfig.me/ip")).read().decode('utf-8', errors='ignore')  # узнаём IP адрес
+            CITY = ip
+        
         r = requests.get(f"https://api.weatherapi.com/v1/current.json?key={API_WEATHER_KEY}&q={CITY}&aqi=yes&lang={LANGUAGE}")
         current_weather = r.json()
+        
         if AUTO_DETECT_SETTINGS:  # если данные получаются по IP
             CITY = current_weather["location"]["name"] + ", " + current_weather["location"]["region"] # сохраняем название из ответа API
-            update_city()  # обновляем город
+            update_city()  # и заменяем IP адрес на город
+        
         # Добавляем знак для красивого вывода положительной температуры
         sign = ""
         if current_weather["current"]["temp_c"] > 0:
@@ -272,9 +274,9 @@ def get_weather_data():
         play_weather_sounds(condition)
         
     except:  # иначе отображаем сообщение об ошибке
-        temper = 0
+        temper = ""
         condition = "Нет связи :(" if LANGUAGE == "ru" else "No connection :("
-        icon = None
+        icon = resource_path('./resources/images/no_connection.png')
             
     return temper, condition, icon
 
@@ -293,13 +295,21 @@ def update_weather_data():
     temper_label.config(text=f"{temper}{TEMP_UNIT}")  # Обновляем текст Label
     condition_label.config(text=f"{condition}")  # Обновляем текст Label
     
-    if icon:  # только если иконка доступна
+    if icon!=resource_path('./resources/images/no_connection.png'):  # только если иконка доступна
         # Считываем данные и создаем изображение
         image_data = icon.read()
         img = ImageTk.PhotoImage(data=image_data)
         icon_label.config(image=img)
         # Сохраняем ссылку на изображение, чтобы оно не удалилось
         icon_label.image = img
+    else:  # нет соединения с API
+        # Загружаем и отображаем логотип
+        image_data = Image.open(resource_path('./resources/images/no_connection.png'))
+        image_data = image_data.resize((80, 80), Image.LANCZOS)
+        img = ImageTk.PhotoImage(image_data)
+        icon_label.config(image=img)
+        icon_label.image = img        
+        
     
     condition_label.after(60000, update_weather_data)  # Планируем обновление через 1 минуту
 
@@ -406,7 +416,7 @@ def open_settings():
     settings_window.title(f"WinWeather {VERSION} Настройки" if LANGUAGE == "ru" else f"WinWeather {VERSION} Settings")
     center_window(settings_window, WIDTH, HEIGHT)
     settings_window.resizable(width=False, height=False)
-    settings_window.iconbitmap(resource_path('WinWeather.ico'))
+    settings_window.iconbitmap(resource_path('./resources/images/WinWeather.ico'))
     settings_window.grab_set()  # блокировка основного окна, пока открыты настройки
     
     # Применяем текущую тему к окну настроек   
@@ -423,8 +433,8 @@ def open_settings():
     language_var = tk.StringVar(value=LANGUAGE)
     theme_var = tk.StringVar(value=THEME)
     volume_var = tk.DoubleVar(value=VOLUME)
-    widget_top_var = tk.StringVar()
-      
+    widget_top_var = tk.StringVar()    
+    
     # Выводим название темы на нужном языке (но в переменных всё на английском)
     if THEME == "auto":
         theme_var.set("авто" if LANGUAGE == "ru" else "auto")
@@ -444,7 +454,8 @@ def open_settings():
     row = 0
     tk.Label(settings_window, text="Город:" if LANGUAGE == "ru" else "City:", 
             bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=(20, 5), sticky='w')
-    ttk.Entry(settings_window, textvariable=city_var, width=20).grid(row=row, column=1, padx=10, pady=(20, 5), sticky='ew')
+    ttk.Combobox(settings_window, textvariable=city_var, width=20,
+                 values=["определить по IP" if LANGUAGE == "ru" else "identify by IP"]).grid(row=row, column=1, padx=10, pady=(20, 5), sticky='ew')
     
     # Формат времени
     row += 1
@@ -530,13 +541,18 @@ def open_settings():
 def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var, theme_var, volume_var, widget_top_var, settings_window):
     global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, VOLUME, current_sound, AUTO_DETECT_SETTINGS, WIDGET_ALWAYS_ON_TOP
     
-    CITY = city_var.get()
     TEMP_UNIT = temp_unit_var.get()
     TIME_FORMAT = time_format_var.get()
     LANGUAGE = language_var.get()
     THEME = theme_var.get()
     VOLUME = volume_var.get()
-    AUTO_DETECT_SETTINGS = False  # теперь считываем настройки пользователя
+        
+    # Проверяем, как будет определяться местоположение для запроса к API
+    if city_var.get() == "определить по IP" or city_var.get() == "identify by IP":
+        AUTO_DETECT_SETTINGS = True  # определяем автоматически
+    else:
+        AUTO_DETECT_SETTINGS = False  # определяем по вводу пользователя
+        CITY = city_var.get()  # сохраняем нужный город
     
     # Если в переменной сохранены названия темы на русском - сохраняем в переменную на английском
     if theme_var.get() == "авто":
@@ -566,7 +582,7 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
         "THEME": THEME,
         "VOLUME": VOLUME,
         "WIDGET_ALWAYS_ON_TOP": WIDGET_ALWAYS_ON_TOP,
-        "AUTO_DETECT_SETTINGS": False  # теперь считываем настройки пользователя
+        "AUTO_DETECT_SETTINGS": AUTO_DETECT_SETTINGS  # теперь считываем настройки пользователя
     }
     save_settings(settings_to_save)
     
@@ -613,15 +629,18 @@ current_theme_name = THEME  # глобальная переменная для �
 
 # Применяем автоопределение настроек, если включено
 if AUTO_DETECT_SETTINGS:
-    ip = urlopen(Request("https://ifconfig.me/ip")).read().decode('utf-8', errors='ignore')
-    CITY = ip
+    try:
+        ip = urlopen(Request("https://ifconfig.me/ip")).read().decode('utf-8', errors='ignore')
+        CITY = ip
+    except Exception as e:
+        print(f"Не удалось получить IP: {e}")
 
 # Создаем главное окно
 root = tk.Tk()
 root.title(f"WinWeather {VERSION}")
 center_window(root, WIDTH, HEIGHT)
 root.resizable(width=False, height=False)
-root.iconbitmap(resource_path('WinWeather.ico'))  
+root.iconbitmap(resource_path('./resources/images/WinWeather.ico'))  
 
 # Применяем тему сразу после создания окна
 if THEME == "auto":  # тема автоматическая?
@@ -646,7 +665,7 @@ author_label = tk.Label(root, text=ABOUT, font=("Arial", 9, 'italic'), bg=curren
 # Создаём кнопку настроек
 settings_frame = tk.Frame(root, bg=current_theme["bg"], bd=0, highlightthickness=0)
 settings_frame.place(x=360, y=280, width=30, height=30)
-settings_img = Image.open(resource_path("settings_icon.ico"))
+settings_img = Image.open(resource_path("./resources/images/settings_icon.ico"))
 settings_img = settings_img.resize((30, 30), Image.LANCZOS)
 settings_photo = ImageTk.PhotoImage(settings_img)
 
@@ -669,7 +688,7 @@ settings_button.bind("<Leave>", on_leave_settings)
 # Создаём кнопку переключения в режим виджета и обратно
 pin_frame = tk.Frame(root, bg=current_theme["bg"], bd=0, highlightthickness=0)
 pin_frame.place(x=10, y=10, width=30, height=30)
-pin_img = Image.open(resource_path("pin_icon.ico"))
+pin_img = Image.open(resource_path("./resources/images/pin_icon.ico"))
 pin_img = pin_img.resize((30, 30), Image.LANCZOS)
 pin_photo = ImageTk.PhotoImage(pin_img)
 
