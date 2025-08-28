@@ -3,8 +3,8 @@
 # Поддерживаются два режима работы: оконное приложение (главное окно и окно настроек) и виджет.
 # GitHub: https://github.com/VladislavBanitsky/WinWeather
 # Разработчик: Владислав Баницкий
-# Версия: 1.1.1
-# Обновлено: 27.08.2025  
+# Версия: 1.1.2
+# Обновлено: 28.08.2025  
 # ==============================================================================================
 
 import tkinter as tk
@@ -26,7 +26,7 @@ HEIGHT = 320
 W_WIDTH  = 250
 W_HEIGHT = 100
 
-VERSION = "1.1.1"
+VERSION = "1.1.2"
 ABOUT = f"2025, Vladislav Banitsky, v. {VERSION}"
 
 # Настройки по умолчанию
@@ -260,7 +260,7 @@ def get_weather_data():
         current_weather = r.json()
         
         if AUTO_DETECT_SETTINGS:  # если данные получаются по IP
-            CITY = current_weather["location"]["name"] + ", " + current_weather["location"]["region"] # сохраняем название из ответа API
+            CITY = current_weather["location"]["name"] # сохраняем название из ответа API
             update_city()  # и заменяем IP адрес на город
         
         # Добавляем знак для красивого вывода положительной температуры
