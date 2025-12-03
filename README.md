@@ -1,6 +1,13 @@
 # Welcome to WinWeather community!!!
 Meet a simple and convenient weather viewing application for Windows! During rain, thunderstorms, snow, or hail, the sound of these natural phenomena is turned on. Download, run (without installation), configure and enjoy :)
 
+## Snow at the desktop (NEW!)
+If you want to decorate your desktop for the New Year, you can enable snow in the settings and beautiful snow will start falling on your desktop.
+
+<div align="center">
+  <img src="screenshots/Screenshot_snow.PNG"/>
+</div>
+
 ## Light Theme
 <div align="center">
   <img src="screenshots/Screenshot_splash_screen_light.PNG" height="280"/> <img src="screenshots/Screenshot_light.PNG" height="280"/>
