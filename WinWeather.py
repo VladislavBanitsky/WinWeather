@@ -3,8 +3,8 @@
 # Поддерживаются два режима работы: оконное приложение (главное окно и окно настроек) и виджет.
 # GitHub: https://github.com/VladislavBanitsky/WinWeather
 # Разработчик: Владислав Баницкий
-# Версия: 1.1.2
-# Обновлено: 28.08.2025  
+# Версия: 1.1.3
+# Обновлено: 03.12.2025  
 # ==============================================================================================
 
 import tkinter as tk
@@ -18,7 +18,9 @@ import sys
 import os
 import pygame  # для работы со звуком
 from pygame import mixer
+from SnowOnDesktop import SnowDesktopOverlay
 
+snow_overlay = None  # Глобальная переменная для снега
 
 WIDTH = 400
 HEIGHT = 320
@@ -26,7 +28,7 @@ HEIGHT = 320
 W_WIDTH  = 250
 W_HEIGHT = 100
 
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 ABOUT = f"2025, Vladislav Banitsky, v. {VERSION}"
 
 # Настройки по умолчанию
@@ -39,7 +41,8 @@ DEFAULT_SETTINGS = {
     "THEME": "auto",
     "VOLUME": 0.5,
     "WIDGET_ALWAYS_ON_TOP": False,
-    "AUTO_DETECT_SETTINGS": True
+    "AUTO_DETECT_SETTINGS": True,
+    "SNOW_IS_ON": True
 }
 
 # Цветовые схемы для тем
@@ -391,7 +394,6 @@ def toggle_widget_mode():
         # Убираем обработчики перемещения
         root.unbind('<Button-1>')
         root.unbind('<B1-Motion>')
-        root.unbind('<Double-Button-1>')
         
 
 # Функция для начала перемещения окна в режиме виджета
@@ -400,7 +402,6 @@ def start_move(event):
     x = event.x
     y = event.y
 
-
 # Функция для окончания перемещения окна в режиме виджета
 def on_move(event):
     deltax = event.x - x
@@ -408,7 +409,6 @@ def on_move(event):
     x_pos = root.winfo_x() + deltax
     y_pos = root.winfo_y() + deltay
     root.geometry(f"+{x_pos}+{y_pos}")
-
 
 # Функция для отображения окна Настройки
 def open_settings():
@@ -433,7 +433,8 @@ def open_settings():
     language_var = tk.StringVar(value=LANGUAGE)
     theme_var = tk.StringVar(value=THEME)
     volume_var = tk.DoubleVar(value=VOLUME)
-    widget_top_var = tk.StringVar()    
+    widget_top_var = tk.StringVar()
+    snow_is_on_var = tk.StringVar(value=SNOW_IS_ON)
     
     # Выводим название темы на нужном языке (но в переменных всё на английском)
     if THEME == "auto":
@@ -448,7 +449,12 @@ def open_settings():
         widget_top_var.set("всех окон" if LANGUAGE == "ru" else "all windows")
     else:
         widget_top_var.set("рабочего стола" if LANGUAGE == "ru" else "desktop")
-            
+    
+    if SNOW_IS_ON == True:
+        snow_is_on_var.set("да" if LANGUAGE == "ru" else "yes")
+    else:
+        snow_is_on_var.set("нет" if LANGUAGE == "ru" else "no")
+        
     # Создаем элементы управления с использованием grid    
     # Город
     row = 0
@@ -524,12 +530,20 @@ def open_settings():
                  values=["всех окон" if LANGUAGE == "ru" else "all windows",
                          "рабочего стола" if LANGUAGE == "ru" else "desktop"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')
     
+    # Падающий снег поверх рабочего стола
+    row += 1
+    tk.Label(settings_window, text="Включить снег:" if LANGUAGE == "ru" else "Turn on snow:", 
+            bg=current_theme["bg"], fg=current_theme["fg"]).grid(row=row, column=0, padx=10, pady=5, sticky='w')
+    ttk.Combobox(settings_window, textvariable=snow_is_on_var, 
+                 values=["да" if LANGUAGE == "ru" else "yes",
+                         "нет" if LANGUAGE == "ru" else "no"], state="readonly", width=18).grid(row=row, column=1, padx=10, pady=5, sticky='ew')    
+    
     # Кнопка сохранения
     row += 1
     save_button = ttk.Button(settings_window, 
                              text="Сохранить" if LANGUAGE == "ru" else "Save", 
                              command=lambda: save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var,
-                                                                     theme_var, volume_var, widget_top_var, settings_window))
+                                                                     theme_var, volume_var, widget_top_var, settings_window, snow_is_on_var))
     save_button.grid(row=row, column=0, columnspan=2, pady=20)
     
     # Настройка веса столбцов для правильного растяжения
@@ -538,8 +552,8 @@ def open_settings():
 
     
 # Функция для кнопки сохранения
-def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var, theme_var, volume_var, widget_top_var, settings_window):
-    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, VOLUME, current_sound, AUTO_DETECT_SETTINGS, WIDGET_ALWAYS_ON_TOP
+def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_var, theme_var, volume_var, widget_top_var, settings_window, snow_is_on_var):
+    global CITY, TEMP_UNIT, TIME_FORMAT, LANGUAGE, THEME, VOLUME, current_sound, AUTO_DETECT_SETTINGS, WIDGET_ALWAYS_ON_TOP, SNOW_IS_ON, snow_overlay
     
     TEMP_UNIT = temp_unit_var.get()
     TIME_FORMAT = time_format_var.get()
@@ -568,6 +582,25 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
     else:
         WIDGET_ALWAYS_ON_TOP = False
     
+    if snow_is_on_var.get() == "да" or snow_is_on_var.get() == "yes":
+        SNOW_IS_ON = True
+    else:
+        SNOW_IS_ON = False
+        
+    # Обработка настроек снега
+    if SNOW_IS_ON:
+        if snow_overlay is None:
+            # Создаем снег, если его еще нет
+            snow_overlay = SnowDesktopOverlay(root)
+            snow_overlay.show()
+        else:
+            # Показываем снег, если он уже создан
+            snow_overlay.show()
+    else:
+        if snow_overlay is not None:
+            # Скрываем снег, если он есть
+            snow_overlay.hide()
+    
     # Обновляем громкость текущего звука
     if current_sound:
         current_sound.set_volume(VOLUME)
@@ -582,6 +615,7 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
         "THEME": THEME,
         "VOLUME": VOLUME,
         "WIDGET_ALWAYS_ON_TOP": WIDGET_ALWAYS_ON_TOP,
+        "SNOW_IS_ON": SNOW_IS_ON,
         "AUTO_DETECT_SETTINGS": AUTO_DETECT_SETTINGS  # теперь считываем настройки пользователя
     }
     save_settings(settings_to_save)
@@ -619,6 +653,7 @@ TIME_FORMAT = settings["TIME_FORMAT"]
 LANGUAGE = settings["LANGUAGE"]
 THEME = settings["THEME"]
 VOLUME = settings.get("VOLUME", 0.5)
+SNOW_IS_ON = settings.get("SNOW_IS_ON", True)
 WIDGET_MODE = False
 WIDGET_ALWAYS_ON_TOP = settings.get("WIDGET_ALWAYS_ON_TOP", True)
 WIDGET_TRANSPARENCY = 0.9
@@ -647,6 +682,10 @@ if THEME == "auto":  # тема автоматическая?
     current_theme_name = get_auto_theme()  # тогда узнаём нужную
 else:  # иначе тема статическая
     current_theme_name = THEME  # просто сохраняем статическую тему 
+
+if SNOW_IS_ON:
+    snow_overlay = SnowDesktopOverlay(root)
+    snow_overlay.show()
 
 current_theme = THEMES[current_theme_name]  # получаем нужные цвета в глобальную переменную
 
@@ -723,9 +762,13 @@ if not WIDGET_MODE:
     author_label.pack(pady=3, side=tk.BOTTOM)
 
 # Запуск основного цикла приложения
-root.mainloop()
-
-# При выходе из приложения останавливаем все звуки
-if SOUND_INITIALIZED:
-    mixer.quit()
-pygame.quit()
+try:
+    root.mainloop()
+finally:
+    # При выходе из приложения останавливаем все звуки
+    if SOUND_INITIALIZED:
+        mixer.quit()
+    pygame.quit()
+    # Останавливаем снег, если он запущен
+    if snow_overlay is not None:
+        snow_overlay.quit()
