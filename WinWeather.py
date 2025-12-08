@@ -18,9 +18,12 @@ import sys
 import os
 import pygame  # для работы со звуком
 from pygame import mixer
+import pystray
 from SnowOnDesktop import SnowDesktopOverlay
 
 snow_overlay = None  # Глобальная переменная для снега
+systray_icon = None
+APP_IN_TRAY = False
 
 WIDTH = 400
 HEIGHT = 320
@@ -28,7 +31,7 @@ HEIGHT = 320
 W_WIDTH  = 250
 W_HEIGHT = 100
 
-VERSION = "1.1.3"
+VERSION = "1.1.4 beta"
 ABOUT = f"2025, Vladislav Banitsky, v. {VERSION}"
 
 # Настройки по умолчанию
@@ -60,6 +63,124 @@ THEMES = {
         "splash_bg": "#1a1a1a"
     }
 }
+
+
+# Функции для работы с треем
+def create_systray_icon():
+    """Создание иконки в системном трее"""
+    global systray_icon, APP_IN_TRAY
+    
+    try:
+        # Загружаем иконку для трея
+        icon_image = Image.open(resource_path('./resources/images/WinWeather.ico'))
+        
+        # Создаем меню для иконки в трее
+        menu = pystray.Menu(
+            pystray.MenuItem(
+                "Развернуть" if LANGUAGE == "ru" else "Restore",
+                restore_from_tray
+            ),
+            pystray.MenuItem(
+                "Выход" if LANGUAGE == "ru" else "Exit",
+                quit_app
+            )
+        )
+        
+        # Создаем иконку в трее
+        systray_icon = pystray.Icon(
+            "WinWeather",
+            icon_image,
+            "WinWeather",
+            menu
+        )
+        
+        # Запускаем иконку в трее в отдельном потоке
+        def run_icon():
+            systray_icon.run()
+        
+        thread = threading.Thread(target=run_icon, daemon=True)
+        thread.start()
+        
+        APP_IN_TRAY = True
+        
+    except Exception as e:
+        print(f"Ошибка создания иконки в трее: {e}")
+
+def minimize_to_tray():
+    """Сворачивание приложения в трей"""
+    global APP_IN_TRAY
+    
+    try:
+        # Скрываем главное окно
+        root.withdraw()
+        
+        # Показываем снег, если он включен
+        if SNOW_IS_ON and snow_overlay is not None:
+            snow_overlay.show()
+        
+        # Создаем иконку в трее, если еще не создана
+        if systray_icon is None:
+            create_systray_icon()
+        else:
+            APP_IN_TRAY = True
+        
+        print("Приложение свернуто в трей")
+        
+    except Exception as e:
+        print(f"Ошибка при сворачивании в трей: {e}")
+
+def restore_from_tray(icon=None, item=None):
+    """Восстановление приложения из трея"""
+    global APP_IN_TRAY
+    
+    try:
+        # Показываем главное окно
+        root.deiconify()
+        root.lift()
+        root.focus_force()
+        
+        # Обновляем состояние
+        APP_IN_TRAY = False
+        
+        # Убираем снег, если приложение развернуто (чтобы не мешал)
+        if snow_overlay is not None:
+            snow_overlay.hide()
+        
+        print("Приложение восстановлено из трея")
+        
+    except Exception as e:
+        print(f"Ошибка при восстановлении из трея: {e}")
+
+def quit_app(icon=None, item=None):
+    """Полный выход из приложения"""
+    global snow_overlay
+    
+    # Останавливаем снег
+    if snow_overlay is not None:
+        snow_overlay.quit()
+    
+    # Останавливаем звук
+    if SOUND_INITIALIZED:
+        mixer.quit()
+        pygame.quit()
+    
+    # Закрываем иконку в трее
+    if systray_icon is not None:
+        systray_icon.stop()
+    
+    # Закрываем приложение
+    root.quit()
+    root.destroy()
+
+# Добавьте обработчик закрытия окна (перед root.mainloop())
+def on_closing():
+    """Обработка закрытия окна"""
+    if SNOW_IS_ON:
+        # Если включен снег, сворачиваем в трей вместо закрытия
+        minimize_to_tray()
+    else:
+        # Иначе закрываем приложение
+        quit_app()
 
 
 # Функция для автоматического переключения темы в зависимости от времени суток
@@ -197,6 +318,12 @@ def apply_theme():
         activebackground=current_theme["button_active"]
     )
     pin_frame.configure(bg=current_theme["bg"])
+    
+    tray_frame.configure(bg=current_theme["bg"])
+    tray_button.configure(
+        bg=current_theme["bg"],
+        activebackground=current_theme["button_active"]
+    )
     
     # Обновляем прозрачность в режиме виджета
     if WIDGET_MODE:
@@ -592,10 +719,16 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
         if snow_overlay is None:
             # Создаем снег, если его еще нет
             snow_overlay = SnowDesktopOverlay(root)
-            snow_overlay.show()
+            if APP_IN_TRAY:  # Если приложение в трее, показываем снег
+                snow_overlay.show()
+            else:  # Если приложение развернуто, скрываем снег
+                snow_overlay.hide()
         else:
-            # Показываем снег, если он уже создан
-            snow_overlay.show()
+            # Показываем или скрываем снег в зависимости от состояния приложения
+            if APP_IN_TRAY:
+                snow_overlay.show()
+            else:
+                snow_overlay.hide()
     else:
         if snow_overlay is not None:
             # Скрываем снег, если он есть
@@ -643,6 +776,14 @@ def on_enter_pin(e):
 
 def on_leave_pin(e):
     pin_button['bg'] = THEMES[current_theme_name]["bg"]
+    
+
+# Эффекты при наведении для кнопки трея
+def on_enter_tray(e):
+    tray_button['bg'] = THEMES[current_theme_name]["button_active"]
+
+def on_leave_tray(e):
+    tray_button['bg'] = THEMES[current_theme_name]["bg"]
 
 # Загружаем настройки при старте
 settings = load_settings()
@@ -747,6 +888,29 @@ pin_button.pack(fill='both', expand=True)
 pin_button.bind("<Enter>", on_enter_pin)
 pin_button.bind("<Leave>", on_leave_pin)
 
+# Создаём кнопку сворачивания в трей
+tray_frame = tk.Frame(root, bg=current_theme["bg"], bd=0, highlightthickness=0)
+tray_frame.place(x=360, y=10, width=30, height=30)
+tray_img = Image.open(resource_path('./resources/images/WinWeather.ico'))
+tray_img = tray_img.resize((30, 30), Image.LANCZOS)
+tray_photo = ImageTk.PhotoImage(tray_img)
+
+tray_button = tk.Button(
+    tray_frame,
+    image=tray_photo,
+    bg=current_theme["bg"],
+    activebackground=current_theme["button_active"],
+    bd=0,
+    highlightthickness=0,
+    relief='flat',
+    command=minimize_to_tray
+)
+
+tray_button.image = tray_photo  # Сохраняем ссылку на изображение
+tray_button.pack(fill='both', expand=True)
+tray_button.bind("<Enter>", on_enter_tray)
+tray_button.bind("<Leave>", on_leave_tray)
+
 # Запускаем обновление
 update_time()
 update_weather_data()
@@ -763,6 +927,7 @@ if not WIDGET_MODE:
 
 # Запуск основного цикла приложения
 try:
+    root.protocol("WM_DELETE_WINDOW", on_closing)
     root.mainloop()
 finally:
     # При выходе из приложения останавливаем все звуки
