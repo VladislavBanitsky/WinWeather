@@ -3,10 +3,11 @@
 # Поддерживаются два режима работы: оконное приложение (главное окно и окно настроек) и виджет.
 # GitHub: https://github.com/VladislavBanitsky/WinWeather
 # Разработчик: Владислав Баницкий
-# Версия: 1.1.3
-# Обновлено: 03.12.2025  
+# Версия: 1.1.4
+# Обновлено: 10.12.2025  
 # ==============================================================================================
 
+import threading
 import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
@@ -31,7 +32,7 @@ HEIGHT = 320
 W_WIDTH  = 250
 W_HEIGHT = 100
 
-VERSION = "1.1.4 beta"
+VERSION = "1.1.4"
 ABOUT = f"2025, Vladislav Banitsky, v. {VERSION}"
 
 # Настройки по умолчанию
@@ -106,6 +107,7 @@ def create_systray_icon():
     except Exception as e:
         print(f"Ошибка создания иконки в трее: {e}")
 
+
 def minimize_to_tray():
     """Сворачивание приложения в трей"""
     global APP_IN_TRAY
@@ -129,8 +131,21 @@ def minimize_to_tray():
     except Exception as e:
         print(f"Ошибка при сворачивании в трей: {e}")
 
+
 def restore_from_tray(icon=None, item=None):
     """Восстановление приложения из трея"""
+    global APP_IN_TRAY
+    
+    try:
+        # Используем after для безопасного вызова из главного потока Tkinter
+        root.after(0, _safe_restore)
+        
+    except Exception as e:
+        print(f"Ошибка при восстановлении из трея: {e}")
+
+
+def _safe_restore():
+    """Безопасное восстановление окна из главного потока Tkinter"""
     global APP_IN_TRAY
     
     try:
@@ -142,14 +157,11 @@ def restore_from_tray(icon=None, item=None):
         # Обновляем состояние
         APP_IN_TRAY = False
         
-        # Убираем снег, если приложение развернуто (чтобы не мешал)
-        if snow_overlay is not None:
-            snow_overlay.hide()
-        
         print("Приложение восстановлено из трея")
         
     except Exception as e:
         print(f"Ошибка при восстановлении из трея: {e}")
+
 
 def quit_app(icon=None, item=None):
     """Полный выход из приложения"""
@@ -168,19 +180,24 @@ def quit_app(icon=None, item=None):
     if systray_icon is not None:
         systray_icon.stop()
     
-    # Закрываем приложение
-    root.quit()
-    root.destroy()
+    # Закрываем приложение через метод after (в главном потоке Tkinter)
+    root.after(0, _safe_quit)
 
-# Добавьте обработчик закрытия окна (перед root.mainloop())
+
+def _safe_quit():
+    """Безопасное закрытие приложения из главного потока Tkinter"""
+    try:
+        root.quit()
+        root.destroy()
+        print("Выход из приложения")
+    except:
+        pass
+
+
 def on_closing():
     """Обработка закрытия окна"""
-    if SNOW_IS_ON:
-        # Если включен снег, сворачиваем в трей вместо закрытия
-        minimize_to_tray()
-    else:
-        # Иначе закрываем приложение
-        quit_app()
+    # Используем after для безопасного вызова из главного потока
+    root.after(0, quit_app)
 
 
 # Функция для автоматического переключения темы в зависимости от времени суток
@@ -719,16 +736,7 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
         if snow_overlay is None:
             # Создаем снег, если его еще нет
             snow_overlay = SnowDesktopOverlay(root)
-            if APP_IN_TRAY:  # Если приложение в трее, показываем снег
-                snow_overlay.show()
-            else:  # Если приложение развернуто, скрываем снег
-                snow_overlay.hide()
-        else:
-            # Показываем или скрываем снег в зависимости от состояния приложения
-            if APP_IN_TRAY:
-                snow_overlay.show()
-            else:
-                snow_overlay.hide()
+            snow_overlay.show()
     else:
         if snow_overlay is not None:
             # Скрываем снег, если он есть
@@ -891,7 +899,7 @@ pin_button.bind("<Leave>", on_leave_pin)
 # Создаём кнопку сворачивания в трей
 tray_frame = tk.Frame(root, bg=current_theme["bg"], bd=0, highlightthickness=0)
 tray_frame.place(x=360, y=10, width=30, height=30)
-tray_img = Image.open(resource_path('./resources/images/WinWeather.ico'))
+tray_img = Image.open(resource_path('./resources/images/minimize-tray-button.png'))
 tray_img = tray_img.resize((30, 30), Image.LANCZOS)
 tray_photo = ImageTk.PhotoImage(tray_img)
 
