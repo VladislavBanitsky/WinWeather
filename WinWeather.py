@@ -473,6 +473,33 @@ def update_auto_theme():
     root.after(60000, update_auto_theme)  # Проверяем каждую минуту
 
 
+def update_tray_menu():
+    """Обновление меню трея при изменении языка"""
+    global systray_icon, LANGUAGE
+    
+    if systray_icon is not None:
+        try:
+            # Создаем новое меню с текущим языком
+            menu = pystray.Menu(
+                pystray.MenuItem(
+                    "Развернуть" if LANGUAGE == "ru" else "Restore",
+                    restore_from_tray
+                ),
+                pystray.MenuItem(
+                    "Выход" if LANGUAGE == "ru" else "Exit",
+                    quit_app
+                )
+            )
+            
+            # Обновляем меню иконки
+            systray_icon.menu = menu
+            
+            print("Меню трея обновлено")
+            
+        except Exception as e:
+            print(f"Ошибка обновления меню трея: {e}")
+
+
 # Функция для переключения режима виджета
 def toggle_widget_mode():
     global WIDGET_MODE
@@ -764,7 +791,7 @@ def save_settings_by_button(city_var, temp_unit_var, time_format_var, language_v
     apply_theme()
     update_city()
     update_weather_data()
-    
+    update_tray_menu()
     settings_window.destroy()
 
 
