@@ -22,7 +22,6 @@ If you want to decorate your desktop for the New Year, you can enable snow in th
 
 A light theme in the morning and afternoon and a dark theme in the evening and at night, which turn on automatically.
 
-
 <div align="center">
   <img src="screenshots/Screenshot_auto.PNG" height="280"/>
 </div>
@@ -31,9 +30,15 @@ A light theme in the morning and afternoon and a dark theme in the evening and a
 
 Minimalism is our everything, therefore, a minimalistic widget is provided that is superimposed on top of all windows or only on top of the desktop and positioned anywhere on the screen by simply dragging the left mouse button. A pin button is provided to switch to widget mode and back.
 
-
 <div align="center">
   <img src="screenshots/Screenshot_widget_light.PNG" height="280"/> <img src="screenshots/Screenshot_widget_dark.PNG" height="280"/>
+</div>
+
+## Minimized mode
+Clicking on the arrow button collapses the application into the system tray. Right-clicking on the tray icon opens a context menu from which you can maximize the program window or close it.
+
+<div align="center">
+  <img src="screenshots/Screenshot_tray_icon.PNG" height="70"/> <img src="screenshots/Screenshot_tray_menu.PNG" height="70"/>
 </div>
 
 ## Supported languages
